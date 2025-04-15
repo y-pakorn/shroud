@@ -1,8 +1,8 @@
 /*
 #[test_only]
-module shroud::shroud_tests;
+module shroud::core_tests;
 // uncomment this line to import the module
-// use shroud::shroud;
+// use shroud::core;
 
 const ENotImplemented: u64 = 0;
 
