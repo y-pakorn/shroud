@@ -27,7 +27,6 @@ public struct Shroud has key, store {
     balances: ObjectBag,
     allowed_token_length: u64,
     allowed_tokens: vector<TypeName>,
-    account_init: Table<address, bool>,
     keys: Bag,
 }
 
@@ -126,7 +125,6 @@ public fun initialize(_: &mut ShroudAdmin, ctx: &mut TxContext): ID {
         nullifiers: table::new(ctx),
         balances: object_bag::new(ctx),
         allowed_tokens: vector::empty(),
-        account_init: table::new(ctx),
         keys: bag::new(ctx),
     };
     let id = shroud.id.to_inner();
@@ -163,7 +161,7 @@ public fun deposit<T>(
     let prev_coin: &mut Coin<T> = shroud.balances.borrow_mut(tn);
     prev_coin.join(coin);
 
-    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    let mut coin_diff = coin_diff::empty(shroud.allowed_token_length, shroud.allowed_tokens);
     coin_diff.add_coin(tn, amount);
     let diff_hash = coin_diff.final_repr();
 
@@ -216,7 +214,7 @@ public fun withdraw<T>(
     let prev_coin: &mut Coin<T> = shroud.balances.borrow_mut(tn);
     let withdrawn_coin = prev_coin.split(amount, ctx);
 
-    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    let mut coin_diff = coin_diff::empty(shroud.allowed_token_length, shroud.allowed_tokens);
     coin_diff.sub_coin(tn, amount);
     let diff_hash = coin_diff.final_repr();
 
@@ -277,7 +275,7 @@ public fun start_swap<ORIGIN, TARGET>(
     let coin: &mut Coin<ORIGIN> = shroud.balances.borrow_mut(tn);
     let origin_coin = coin.split(amount, ctx);
 
-    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    let mut coin_diff = coin_diff::empty(shroud.allowed_token_length, shroud.allowed_tokens);
     coin_diff.sub_coin(tn, amount);
     coin_diff.add_coin(tn, minimum_received);
     let diff_hash = coin_diff.final_repr();

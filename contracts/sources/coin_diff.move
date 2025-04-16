@@ -6,15 +6,16 @@ use sui::poseidon::poseidon_bn254;
 use sui::vec_map::{Self, VecMap};
 
 public struct CoinDiff has copy, drop {
+    total: u64,
     map: VecMap<TypeName, FR>,
 }
 
-public fun empty(allowed_tokens: vector<TypeName>): CoinDiff {
+public fun empty(total: u64, allowed_tokens: vector<TypeName>): CoinDiff {
     let mut coin_diff_array = vec_map::empty<TypeName, FR>();
     allowed_tokens.do_ref!(|token| {
         coin_diff_array.insert(*token, fr::zero());
     });
-    CoinDiff { map: coin_diff_array }
+    CoinDiff { total, map: coin_diff_array }
 }
 
 public fun add_coin(coin_diff: &mut CoinDiff, coin_type: TypeName, amount: u64) {
@@ -36,6 +37,9 @@ public fun sub_coin(coin_diff: &mut CoinDiff, coin_type: TypeName, amount: u64) 
 }
 
 public fun final_repr(coin_diff: &CoinDiff): u256 {
-    let (_, values) = coin_diff.map.into_keys_values();
+    let (_, mut values) = coin_diff.map.into_keys_values();
+    while (values.length() < coin_diff.total) {
+        values.push_back(fr::zero());
+    };
     poseidon_bn254(&values.map!(|v| v.repr()))
 }
