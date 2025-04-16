@@ -2,6 +2,7 @@
 module shroud::core;
 
 use shroud::coin_diff;
+use shroud::fr;
 use shroud::merkle::{Self, MerkleTree};
 use std::type_name::{TypeName, get};
 use sui::bag::{Self, Bag};
@@ -85,6 +86,7 @@ fun verify_proof(
     old_leaf_nullifier: u256,
     new_leaf: u256,
     proof: vector<u8>,
+    aux: u256,
 ) {
     let vk = get_vk(shroud);
     let proof_points = groth16::proof_points_from_bytes(proof);
@@ -97,6 +99,8 @@ fun verify_proof(
     public_inputs_bytes.append(to_bytes(&old_leaf_nullifier));
     // 4: new leaf
     public_inputs_bytes.append(to_bytes(&new_leaf));
+    // 5: aux
+    public_inputs_bytes.append(to_bytes(&aux));
     let public_inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
     let is_valid = groth16::verify_groth16_proof(
         &groth16::bn254(),
@@ -170,7 +174,17 @@ public fun deposit<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by adding correct coin
     //    value with correct coin type to the old leaf
-    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
+    // aux = address
+    let aux = fr::from_address(ctx.sender());
+    verify_proof(
+        shroud,
+        current_root,
+        diff_hash,
+        old_leaf_nullifier,
+        new_leaf,
+        proof,
+        aux.repr(),
+    );
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);
@@ -223,7 +237,17 @@ public fun withdraw<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting correct coin
     //    value with correct coin type to the old leaf and final amount >= 0
-    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
+    // aux = address
+    let aux = fr::from_address(ctx.sender());
+    verify_proof(
+        shroud,
+        current_root,
+        diff_hash,
+        old_leaf_nullifier,
+        new_leaf,
+        proof,
+        aux.repr(),
+    );
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);
@@ -285,7 +309,16 @@ public fun start_swap<ORIGIN, TARGET>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting origin coin and
     //    adding target coin and origin coin amount >= 0
-    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
+    // aux = 0
+    verify_proof(
+        shroud,
+        current_root,
+        diff_hash,
+        old_leaf_nullifier,
+        new_leaf,
+        proof,
+        0,
+    );
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);

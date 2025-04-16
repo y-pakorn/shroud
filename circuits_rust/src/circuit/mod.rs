@@ -32,6 +32,7 @@ pub struct MainCircuit<const L: usize, const N: usize> {
     pub nullifier: Fr,              // public
     pub after_leaf: Fr,             // public
     pub hasher: PoseidonConfig<Fr>, // constant
+    pub aux: Fr,                    // public
 }
 
 impl<const L: usize, const N: usize> MainCircuit<L, N> {
@@ -46,6 +47,7 @@ impl<const L: usize, const N: usize> MainCircuit<L, N> {
             diff_hash: Fr::ZERO,
             nullifier: Fr::ZERO,
             after_leaf: Fr::ZERO,
+            aux: Fr::ZERO,
             hasher,
         }
     }
@@ -69,6 +71,7 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
         let diff_hash_var = FpVar::new_input(ns!(cs, "diff_hash"), || Ok(self.diff_hash))?;
         let nullifier_var = FpVar::new_input(ns!(cs, "nullifier"), || Ok(self.nullifier))?;
         let after_leaf_var = FpVar::new_input(ns!(cs, "after_leaf"), || Ok(self.after_leaf))?;
+        let _aux_var = FpVar::new_input(ns!(cs, "aux"), || Ok(self.aux))?;
         let zero_var = FpVar::<Fr>::constant(Fr::ZERO);
 
         let poseidon_parameter_var =
