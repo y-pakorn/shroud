@@ -1,6 +1,7 @@
 /// Module: shroud
 module shroud::core;
 
+use shroud::coin_diff;
 use shroud::merkle::{Self, MerkleTree};
 use std::type_name::{TypeName, get};
 use sui::coin::{Self, Coin};
@@ -13,6 +14,7 @@ const ETOKEN_NOT_ALLOWED: u64 = 0x2;
 const EOLD_NULLIFIER_EXISTS: u64 = 0x3;
 const EINVALID_ROOT: u64 = 0x4;
 const EINSUFFICIENT_RECEIVED: u64 = 0x5;
+const ETOKEN_ALREADY_ALLOWED: u64 = 0x6;
 
 public struct Shroud has key, store {
     id: UID,
@@ -53,10 +55,6 @@ public struct LeafInserted has copy, drop {
     new_root: u256,
 }
 
-// --- HELPER FUNCTIONS ---
-
-// fun construct_coin_diff_array<
-
 // --- FUNCTIONS ---
 
 fun init(ctx: &mut TxContext) {
@@ -73,6 +71,7 @@ fun init(ctx: &mut TxContext) {
 
 public fun allow_token<T>(shroud: &mut Shroud, ctx: &mut TxContext) {
     assert!(shroud.tree.size() == 0, ETREE_NOT_EMPTY);
+    assert!(!shroud.allowed_tokens.contains(&get<T>()), ETOKEN_ALREADY_ALLOWED);
 
     let tn = get<T>();
     shroud.allowed_tokens.push_back(tn);
@@ -91,9 +90,13 @@ public fun deposit<T>(
     let tn = get<T>();
     assert!(shroud.allowed_tokens.contains(&tn), ETOKEN_NOT_ALLOWED);
 
-    let value = coin.value();
+    let amount = coin.value();
     let prev_coin: &mut Coin<T> = shroud.balances.borrow_mut(tn);
     prev_coin.join(coin);
+
+    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    coin_diff.add_coin(tn, amount);
+    let diff_hash = coin_diff.final_repr();
 
     // verify proof
     // 1. old leaf is in tree root (current_root)
@@ -115,7 +118,7 @@ public fun deposit<T>(
 
     emit(Deposited<T> {
         account: ctx.sender(),
-        amount: value,
+        amount: amount,
     });
 
     emit(LeafInserted {
@@ -143,6 +146,10 @@ public fun withdraw<T>(
 
     let prev_coin: &mut Coin<T> = shroud.balances.borrow_mut(tn);
     let withdrawn_coin = prev_coin.split(amount, ctx);
+
+    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    coin_diff.sub_coin(tn, amount);
+    let diff_hash = coin_diff.final_repr();
 
     // verify proof
     // 1. old leaf is in tree root (current_root)
@@ -200,6 +207,11 @@ public fun start_swap<ORIGIN, TARGET>(
 
     let coin: &mut Coin<ORIGIN> = shroud.balances.borrow_mut(tn);
     let origin_coin = coin.split(amount, ctx);
+
+    let mut coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    coin_diff.sub_coin(tn, amount);
+    coin_diff.add_coin(tn, minimum_received);
+    let diff_hash = coin_diff.final_repr();
 
     // verify proof
     // 1. old leaf is in tree root (current_root)
