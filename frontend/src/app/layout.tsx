@@ -1,7 +1,7 @@
 import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import localFont from "next/font/local"
 import { GoogleAnalytics } from "@next/third-parties/google"
 import { Analytics } from "@vercel/analytics/next"
 
@@ -9,9 +9,13 @@ import { env } from "@/env.mjs"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/sonner"
+import { Provider } from "@/components/provider"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const inter = Inter({ subsets: ["latin"] })
+const font = localFont({
+  src: "./NikkeiJournal.woff2",
+  variable: "--font-nikkei",
+})
 
 interface RootLayoutProps {
   children: React.ReactNode
@@ -74,16 +78,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={cn(
           "bg-background min-h-screen antialiased",
-          inter.className
+          font.className,
+          font.variable
         )}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Provider>{children}</Provider>
           <Toaster />
         </ThemeProvider>
       </body>

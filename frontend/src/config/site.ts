@@ -1,13 +1,13 @@
 import { env } from "@/env.mjs"
 
 export const siteConfig = {
-  name: "Next Template",
-  author: "Author",
-  description: "Description",
+  name: "Shroud",
+  author: "yoisha",
+  description: "Trade on Sui with privacy and compliance",
   keywords: [],
   url: {
     base: env.NEXT_PUBLIC_APP_URL,
-    author: "Author",
+    author: "@yoisha",
   },
   twitter: "",
   favicon: "/favicon.ico",
