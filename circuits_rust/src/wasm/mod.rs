@@ -28,6 +28,7 @@ pub struct Account {
     balance: [u64; ASSET_SIZE],
     nonce: Fr,
     address: String,
+    address_fr: Fr,
     latest_seq_sync: u64,
     index: Option<usize>,
 }
@@ -41,6 +42,7 @@ impl Account {
             nonce: Fr::from_le_bytes_mod_order(
                 &hex::decode(&nonce_bytes).expect("Invalid nonce hex string"),
             ),
+            address_fr: Fr::from_le_bytes_mod_order(address.as_bytes()),
             address,
             latest_seq_sync: 0,
             index: None,
@@ -136,7 +138,13 @@ impl State {
     }
 
     #[wasm_bindgen(js_name = prove)]
-    pub fn prove(&mut self, pk_bytes: Vec<u8>, diffs: Vec<i64>, aux: Option<String>) -> JsValue {
+    pub fn prove(
+        &mut self,
+        pk_bytes: Vec<u8>,
+        diffs: Vec<i64>,
+        is_public: bool,
+        aux: Option<String>,
+    ) -> JsValue {
         // deserialize uncompressed pk
         let pk = ProvingKey::<Bn254>::deserialize_uncompressed_unchecked(&pk_bytes[..])
             .expect("Failed to deserialize pk");
@@ -187,6 +195,12 @@ impl State {
 
         let circuit = Circuit {
             nonce: self.account.nonce,
+            address: self.account.address_fr,
+            public_address: if is_public {
+                self.account.address_fr
+            } else {
+                Fr::ZERO
+            },
             before,
             diff,
             after,

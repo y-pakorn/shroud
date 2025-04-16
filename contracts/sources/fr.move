@@ -27,8 +27,15 @@ public fun from_repr(repr: u256): FR {
     }
 }
 
-public fun from_address(address: address): FR {
+public fun from_address_bytes(address: address): FR {
     let mut b = bcs::new(bcs::to_bytes(&address));
+    FR {
+        value: b.peel_u256() % FR_MODULUS,
+    }
+}
+
+public fun from_address_string(address: address): FR {
+    let mut b = bcs::new(address.to_string().into_bytes());
     FR {
         value: b.peel_u256() % FR_MODULUS,
     }

@@ -86,6 +86,7 @@ fun verify_proof(
     old_leaf_nullifier: u256,
     new_leaf: u256,
     proof: vector<u8>,
+    address: u256,
     aux: u256,
 ) {
     let vk = get_vk(shroud);
@@ -99,7 +100,9 @@ fun verify_proof(
     public_inputs_bytes.append(to_bytes(&old_leaf_nullifier));
     // 4: new leaf
     public_inputs_bytes.append(to_bytes(&new_leaf));
-    // 5: aux
+    // 5: public address
+    public_inputs_bytes.append(to_bytes(&address));
+    // 6: aux
     public_inputs_bytes.append(to_bytes(&aux));
     let public_inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
     let is_valid = groth16::verify_groth16_proof(
@@ -174,8 +177,7 @@ public fun deposit<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by adding correct coin
     //    value with correct coin type to the old leaf
-    // aux = address
-    let aux = fr::from_address(ctx.sender());
+    // public address
     verify_proof(
         shroud,
         current_root,
@@ -183,7 +185,8 @@ public fun deposit<T>(
         old_leaf_nullifier,
         new_leaf,
         proof,
-        aux.repr(),
+        fr::from_address_string(ctx.sender()).repr(),
+        0,
     );
 
     // check if root valid
@@ -237,8 +240,7 @@ public fun withdraw<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting correct coin
     //    value with correct coin type to the old leaf and final amount >= 0
-    // aux = address
-    let aux = fr::from_address(ctx.sender());
+    // public address
     verify_proof(
         shroud,
         current_root,
@@ -246,7 +248,8 @@ public fun withdraw<T>(
         old_leaf_nullifier,
         new_leaf,
         proof,
-        aux.repr(),
+        fr::from_address_string(ctx.sender()).repr(),
+        0,
     );
 
     // check if root valid
@@ -309,7 +312,7 @@ public fun start_swap<ORIGIN, TARGET>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting origin coin and
     //    adding target coin and origin coin amount >= 0
-    // aux = 0
+    // private address
     verify_proof(
         shroud,
         current_root,
@@ -317,6 +320,7 @@ public fun start_swap<ORIGIN, TARGET>(
         old_leaf_nullifier,
         new_leaf,
         proof,
+        0,
         0,
     );
 

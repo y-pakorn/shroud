@@ -32,7 +32,9 @@ pub struct MainCircuit<const L: usize, const N: usize> {
     pub nullifier: Fr,              // public
     pub after_leaf: Fr,             // public
     pub hasher: PoseidonConfig<Fr>, // constant
-    pub aux: Fr,                    // public
+    pub address: Fr,
+    pub public_address: Fr, // public
+    pub aux: Fr,            // public
 }
 
 impl<const L: usize, const N: usize> MainCircuit<L, N> {
@@ -49,6 +51,8 @@ impl<const L: usize, const N: usize> MainCircuit<L, N> {
             after_leaf: Fr::ZERO,
             aux: Fr::ZERO,
             hasher,
+            address: Fr::ZERO,
+            public_address: Fr::ZERO,
         }
     }
 }
@@ -71,6 +75,9 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
         let diff_hash_var = FpVar::new_input(ns!(cs, "diff_hash"), || Ok(self.diff_hash))?;
         let nullifier_var = FpVar::new_input(ns!(cs, "nullifier"), || Ok(self.nullifier))?;
         let after_leaf_var = FpVar::new_input(ns!(cs, "after_leaf"), || Ok(self.after_leaf))?;
+        let address_var = FpVar::new_witness(ns!(cs, "address"), || Ok(self.address))?;
+        let public_address_var =
+            FpVar::new_input(ns!(cs, "public_address"), || Ok(self.public_address))?;
         let _aux_var = FpVar::new_input(ns!(cs, "aux"), || Ok(self.aux))?;
         let zero_var = FpVar::<Fr>::constant(Fr::ZERO);
 
@@ -85,13 +92,16 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
             after_var[i].enforce_smaller_or_equal_than_mod_minus_one_div_two()?;
         }
 
-        // before_leaf = H(H(nonce, before[0]), before[1]), ....
-        let before_leaf = before_var.iter().try_fold(nonce_var.clone(), |acc, v| {
+        // P = H(address, nonce)
+        let prehash = PoseidonGadget::evaluate(&poseidon_parameter_var, &address_var, &nonce_var)?;
+
+        // before_leaf = H(H(P, before[0]), before[1]), ....
+        let before_leaf = before_var.iter().try_fold(prehash.clone(), |acc, v| {
             PoseidonGadget::evaluate(&poseidon_parameter_var, &acc, v)
         })?;
 
-        // after_leaf = H(H(nonce, after[0]), after[1]), ....
-        let after_leaf = after_var.iter().try_fold(nonce_var.clone(), |acc, v| {
+        // after_leaf = H(H(P, after[0]), after[1]), ....
+        let after_leaf = after_var.iter().try_fold(prehash.clone(), |acc, v| {
             PoseidonGadget::evaluate(&poseidon_parameter_var, &acc, v)
         })?;
 
@@ -112,6 +122,10 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
             &before_leaf,
             &poseidon_parameter_var,
         )?;
+
+        // public address need to be equal to address (public ops) or zero (private ops)
+        (public_address_var.is_eq(&address_var)? | public_address_var.is_zero()?)
+            .enforce_equal(&Boolean::TRUE)?;
 
         let nullifier =
             PoseidonGadget::evaluate(&poseidon_parameter_var, &before_leaf, &nonce_var)?;
