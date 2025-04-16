@@ -12,6 +12,7 @@ const ETREE_NOT_EMPTY: u64 = 0x1;
 const ETOKEN_NOT_ALLOWED: u64 = 0x2;
 const EOLD_NULLIFIER_EXISTS: u64 = 0x3;
 const EINVALID_ROOT: u64 = 0x4;
+const EINSUFFICIENT_RECEIVED: u64 = 0x5;
 
 public struct Shroud has key, store {
     id: UID,
@@ -27,25 +28,34 @@ public struct ShroudAdmin has key {
 
 // --- EVENTS ---
 
-public struct Deposited has copy, drop {
+public struct Deposited<phantom T> has copy, drop {
     account: address,
-    coin_type: TypeName,
-    value: u64,
-    index: u64,
-    new_root: u256,
+    amount: u64,
 }
 
-public struct Withdrawn has copy, drop {
+public struct Withdrawn<phantom T> has copy, drop {
     account: address,
-    coin_type: TypeName,
-    value: u64,
-    index: u64,
-    new_root: u256,
+    amount: u64,
+}
+
+public struct Swapped<phantom ORIGIN, phantom TARGET> has copy, drop {
+    origin_amount: u64,
+    target_amount: u64,
 }
 
 public struct NullifierUsed has copy, drop {
     nullifier: u256,
 }
+
+public struct LeafInserted has copy, drop {
+    index: u64,
+    value: u256,
+    new_root: u256,
+}
+
+// --- HELPER FUNCTIONS ---
+
+// fun construct_coin_diff_array<
 
 // --- FUNCTIONS ---
 
@@ -103,11 +113,14 @@ public fun deposit<T>(
     // insert new leaf into tree
     let (index, root) = shroud.tree.insert(new_leaf);
 
-    emit(Deposited {
+    emit(Deposited<T> {
         account: ctx.sender(),
-        coin_type: tn,
-        value: value,
+        amount: value,
+    });
+
+    emit(LeafInserted {
         index: index,
+        value: new_leaf,
         new_root: root,
     });
 
@@ -118,7 +131,7 @@ public fun deposit<T>(
 
 public fun withdraw<T>(
     shroud: &mut Shroud,
-    value: u64,
+    amount: u64,
     current_root: u256,
     old_leaf_nullifier: u256,
     new_leaf: u256,
@@ -129,7 +142,7 @@ public fun withdraw<T>(
     assert!(shroud.allowed_tokens.contains(&tn), ETOKEN_NOT_ALLOWED);
 
     let prev_coin: &mut Coin<T> = shroud.balances.borrow_mut(tn);
-    let withdrawn_coin = prev_coin.split(value, ctx);
+    let withdrawn_coin = prev_coin.split(amount, ctx);
 
     // verify proof
     // 1. old leaf is in tree root (current_root)
@@ -149,11 +162,14 @@ public fun withdraw<T>(
     // insert new leaf into tree
     let (index, root) = shroud.tree.insert(new_leaf);
 
-    emit(Withdrawn {
+    emit(Withdrawn<T> {
         account: ctx.sender(),
-        coin_type: tn,
-        value: value,
+        amount: amount,
+    });
+
+    emit(LeafInserted {
         index: index,
+        value: new_leaf,
         new_root: root,
     });
 
@@ -162,4 +178,83 @@ public fun withdraw<T>(
     });
 
     withdrawn_coin
+}
+
+public struct SwapBalance<phantom ORIGIN, phantom TARGET> {
+    amount: u64,
+    minimum_received: u64,
+}
+
+public fun start_swap<ORIGIN, TARGET>(
+    shroud: &mut Shroud,
+    amount: u64,
+    minimum_received: u64,
+    current_root: u256,
+    old_leaf_nullifier: u256,
+    new_leaf: u256,
+    proof: vector<u8>,
+    ctx: &mut TxContext,
+): (Coin<ORIGIN>, SwapBalance<ORIGIN, TARGET>) {
+    let tn = get<ORIGIN>();
+    assert!(shroud.allowed_tokens.contains(&tn), ETOKEN_NOT_ALLOWED);
+
+    let coin: &mut Coin<ORIGIN> = shroud.balances.borrow_mut(tn);
+    let origin_coin = coin.split(amount, ctx);
+
+    // verify proof
+    // 1. old leaf is in tree root (current_root)
+    // 2. old leaf nullifier is correct
+    // 3. new leaf is calculated correctly by subtracting origin coin and
+    //    adding target coin and origin coin amount >= 0
+    // TODO: implement proof verification
+
+    // check if root valid
+    assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);
+
+    // check if old nullifier exists
+    assert!(!shroud.nullifiers.contains(old_leaf_nullifier), EOLD_NULLIFIER_EXISTS);
+    // add old nullifier to nullifiers table
+    shroud.nullifiers.add(old_leaf_nullifier, true);
+
+    let (index, root) = shroud.tree.insert(new_leaf);
+
+    emit(LeafInserted {
+        index: index,
+        value: new_leaf,
+        new_root: root,
+    });
+
+    emit(NullifierUsed {
+        nullifier: old_leaf_nullifier,
+    });
+
+    (
+        origin_coin,
+        SwapBalance {
+            amount: amount,
+            minimum_received: minimum_received,
+        },
+    )
+}
+
+public fun end_swap<ORIGIN, TARGET>(
+    shroud: &mut Shroud,
+    balance: SwapBalance<ORIGIN, TARGET>,
+    coin: Coin<TARGET>,
+    _ctx: &mut TxContext,
+) {
+    let tn = get<TARGET>();
+    assert!(shroud.allowed_tokens.contains(&tn), ETOKEN_NOT_ALLOWED);
+
+    let SwapBalance { amount, minimum_received } = balance;
+    let final_amount = coin.value();
+    assert!(final_amount >= minimum_received, EINSUFFICIENT_RECEIVED);
+
+    let prev_coin: &mut Coin<TARGET> = shroud.balances.borrow_mut(tn);
+    prev_coin.join(coin);
+
+    emit(Swapped<ORIGIN, TARGET> {
+        origin_amount: amount,
+        target_amount: final_amount,
+    });
 }
