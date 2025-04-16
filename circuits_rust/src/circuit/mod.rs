@@ -34,6 +34,23 @@ pub struct MainCircuit<const L: usize, const N: usize> {
     pub hasher: PoseidonConfig<Fr>, // constant
 }
 
+impl<const L: usize, const N: usize> MainCircuit<L, N> {
+    pub fn empty(hasher: PoseidonConfig<Fr>) -> Self {
+        Self {
+            nonce: Fr::ZERO,
+            before: [Fr::ZERO; N],
+            diff: [Fr::ZERO; N],
+            after: [Fr::ZERO; N],
+            merkle_root: Fr::ZERO,
+            merkle_path: Path::empty(),
+            diff_hash: Fr::ZERO,
+            nullifier: Fr::ZERO,
+            after_leaf: Fr::ZERO,
+            hasher,
+        }
+    }
+}
+
 impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L, N> {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fr>) -> r1cs::Result<()> {
         let zero_balance_hash = FpVar::<Fr>::new_constant(
@@ -102,6 +119,6 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
             | (nullifier.is_eq(&nullifier_var)? & is_before_membership_valid))
             .enforce_equal(&Boolean::TRUE)?;
 
-        todo!()
+        Ok(())
     }
 }

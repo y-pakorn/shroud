@@ -41,5 +41,11 @@ public fun final_repr(coin_diff: &CoinDiff): u256 {
     while (values.length() < coin_diff.total) {
         values.push_back(fr::zero());
     };
-    poseidon_bn254(&values.map!(|v| v.repr()))
+    // coin_diff_hash = H(H(0, coin_diff[0]), coin_diff[1]), ...
+    values.map!(|v| v.repr()).fold!(0, |acc, v| {
+        let mut to_hash = vector::empty();
+        to_hash.push_back(acc);
+        to_hash.push_back(v);
+        poseidon_bn254(&to_hash)
+    })
 }

@@ -1,7 +1,6 @@
 use std::{
     borrow::Borrow,
     collections::{BTreeMap, BTreeSet},
-    marker::PhantomData,
 };
 
 use anyhow::anyhow;
@@ -16,7 +15,7 @@ use ark_crypto_primitives::{
     },
     sponge::poseidon::PoseidonConfig,
 };
-use ark_ff::{AdditiveGroup, Field, PrimeField};
+use ark_ff::{AdditiveGroup, Field};
 use ark_r1cs_std::{
     fields::fp::FpVar,
     prelude::{AllocVar, AllocationMode, Boolean, EqGadget, FieldVar},

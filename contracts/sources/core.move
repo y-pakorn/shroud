@@ -114,10 +114,10 @@ fun init(ctx: &mut TxContext) {
 // --- FUNCTIONS ---
 
 public fun initialize(_: &mut ShroudAdmin, ctx: &mut TxContext): ID {
-    let level = 24;
+    let level = 20;
     let valid_size = 20;
     let default_leaf = 0;
-    let allowed_token_length = 10;
+    let allowed_token_length = 5;
     let shroud = Shroud {
         id: object::new(ctx),
         tree: merkle::new(level, valid_size, default_leaf, ctx),
