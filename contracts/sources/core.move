@@ -4,8 +4,11 @@ module shroud::core;
 use shroud::coin_diff;
 use shroud::merkle::{Self, MerkleTree};
 use std::type_name::{TypeName, get};
+use sui::bag::{Self, Bag};
+use sui::bcs::to_bytes;
 use sui::coin::{Self, Coin};
 use sui::event::emit;
+use sui::groth16;
 use sui::object_bag::{Self, ObjectBag};
 use sui::table::{Self, Table};
 
@@ -15,15 +18,17 @@ const EOLD_NULLIFIER_EXISTS: u64 = 0x3;
 const EINVALID_ROOT: u64 = 0x4;
 const EINSUFFICIENT_RECEIVED: u64 = 0x5;
 const ETOKEN_ALREADY_ALLOWED: u64 = 0x6;
-const EACCOUNT_ALREADY_INITIALIZED: u64 = 0x7;
+const EINVALID_PROOF: u64 = 0x7;
 
 public struct Shroud has key, store {
     id: UID,
     tree: MerkleTree,
     nullifiers: Table<u256, bool>,
     balances: ObjectBag,
+    allowed_token_length: u64,
     allowed_tokens: vector<TypeName>,
     account_init: Table<address, bool>,
+    keys: Bag,
 }
 
 public struct ShroudAdmin has key {
@@ -57,43 +62,89 @@ public struct LeafInserted has copy, drop {
     new_root: u256,
 }
 
-// --- FUNCTIONS ---
+// --- Helper Functions ---
+
+fun get_vk(shroud: &Shroud): groth16::PreparedVerifyingKey {
+    let vk_bytes: &vector<u8> = shroud.keys.borrow(0);
+    let pvk = groth16::prepare_verifying_key(&groth16::bn254(), vk_bytes);
+    pvk
+}
+
+fun set_vk(shroud: &mut Shroud, vk_bytes: vector<u8>) {
+    if (shroud.keys.length() == 0) {
+        shroud.keys.add(0, vk_bytes);
+    } else {
+        let bytes: &mut vector<u8> = shroud.keys.borrow_mut(0);
+        *bytes = vk_bytes;
+    }
+}
+
+fun verify_proof(
+    shroud: &Shroud,
+    current_root: u256,
+    diff_hash: u256,
+    old_leaf_nullifier: u256,
+    new_leaf: u256,
+    proof: vector<u8>,
+) {
+    let vk = get_vk(shroud);
+    let proof_points = groth16::proof_points_from_bytes(proof);
+    let mut public_inputs_bytes: vector<u8> = vector::empty();
+    // 1: merkle root
+    public_inputs_bytes.append(to_bytes(&current_root));
+    // 2: diff hash
+    public_inputs_bytes.append(to_bytes(&diff_hash));
+    // 3: old leaf nullifier
+    public_inputs_bytes.append(to_bytes(&old_leaf_nullifier));
+    // 4: new leaf
+    public_inputs_bytes.append(to_bytes(&new_leaf));
+    let public_inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
+    let is_valid = groth16::verify_groth16_proof(
+        &groth16::bn254(),
+        &vk,
+        &public_inputs,
+        &proof_points,
+    );
+    assert!(is_valid, EINVALID_PROOF);
+}
 
 fun init(ctx: &mut TxContext) {
+    transfer::transfer(ShroudAdmin { id: object::new(ctx) }, ctx.sender());
+}
+
+// --- FUNCTIONS ---
+
+public fun initialize(_: &mut ShroudAdmin, ctx: &mut TxContext): ID {
+    let level = 24;
+    let valid_size = 20;
+    let default_leaf = 0;
+    let allowed_token_length = 10;
     let shroud = Shroud {
         id: object::new(ctx),
-        tree: merkle::new(24, 20, 0, ctx),
+        tree: merkle::new(level, valid_size, default_leaf, ctx),
+        allowed_token_length: allowed_token_length,
         nullifiers: table::new(ctx),
         balances: object_bag::new(ctx),
         allowed_tokens: vector::empty(),
         account_init: table::new(ctx),
+        keys: bag::new(ctx),
     };
+    let id = shroud.id.to_inner();
     transfer::share_object(shroud);
-    transfer::transfer(ShroudAdmin { id: object::new(ctx) }, ctx.sender());
+    id
 }
 
-public fun allow_token<T>(shroud: &mut Shroud, ctx: &mut TxContext) {
+public fun initialize_prover(_: &mut ShroudAdmin, shroud: &mut Shroud, vk_bytes: vector<u8>) {
+    set_vk(shroud, vk_bytes);
+}
+
+public fun allow_token<T>(_: &mut ShroudAdmin, shroud: &mut Shroud, ctx: &mut TxContext) {
     assert!(shroud.tree.size() == 0, ETREE_NOT_EMPTY);
     assert!(!shroud.allowed_tokens.contains(&get<T>()), ETOKEN_ALREADY_ALLOWED);
 
     let tn = get<T>();
     shroud.allowed_tokens.push_back(tn);
     shroud.balances.add(tn, coin::zero<T>(ctx));
-}
-
-public fun initialize_account<T>(shroud: &mut Shroud, ctx: &mut TxContext) {
-    assert!(!shroud.account_init.contains(ctx.sender()), EACCOUNT_ALREADY_INITIALIZED);
-    shroud.account_init.add(ctx.sender(), true);
-
-    let coin_diff = coin_diff::empty(shroud.allowed_tokens);
-    let empty_leaf = coin_diff.empty_leaf();
-    let (index, root) = shroud.tree.insert(empty_leaf);
-
-    emit(LeafInserted {
-        index: index,
-        value: empty_leaf,
-        new_root: root,
-    });
 }
 
 public fun deposit<T>(
@@ -121,7 +172,7 @@ public fun deposit<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by adding correct coin
     //    value with correct coin type to the old leaf
-    // TODO: implement proof verification
+    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);
@@ -174,7 +225,7 @@ public fun withdraw<T>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting correct coin
     //    value with correct coin type to the old leaf and final amount >= 0
-    // TODO: implement proof verification
+    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);
@@ -236,7 +287,7 @@ public fun start_swap<ORIGIN, TARGET>(
     // 2. old leaf nullifier is correct
     // 3. new leaf is calculated correctly by subtracting origin coin and
     //    adding target coin and origin coin amount >= 0
-    // TODO: implement proof verification
+    verify_proof(shroud, current_root, diff_hash, old_leaf_nullifier, new_leaf, proof);
 
     // check if root valid
     assert!(shroud.tree.is_valid_root(current_root), EINVALID_ROOT);

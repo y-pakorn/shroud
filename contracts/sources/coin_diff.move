@@ -37,21 +37,5 @@ public fun sub_coin(coin_diff: &mut CoinDiff, coin_type: TypeName, amount: u64) 
 
 public fun final_repr(coin_diff: &CoinDiff): u256 {
     let (_, values) = coin_diff.map.into_keys_values();
-    let mut final: u256 = 0;
-    values.do!(|v| {
-        let repr = v.repr();
-        let mut to_hash = vector::empty();
-        to_hash.push_back(final);
-        to_hash.push_back(repr);
-        final = poseidon_bn254(&to_hash);
-    });
-    final
-}
-
-public fun empty_leaf(coin_diff: &CoinDiff): u256 {
-    let repr = coin_diff.final_repr();
-    let mut to_hash = vector::empty();
-    to_hash.push_back(repr);
-    to_hash.push_back(0);
-    poseidon_bn254(&to_hash)
+    poseidon_bn254(&values.map!(|v| v.repr()))
 }
