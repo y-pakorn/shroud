@@ -47,3 +47,11 @@ public fun final_repr(coin_diff: &CoinDiff): u256 {
     });
     final
 }
+
+public fun empty_leaf(coin_diff: &CoinDiff): u256 {
+    let repr = coin_diff.final_repr();
+    let mut to_hash = vector::empty();
+    to_hash.push_back(repr);
+    to_hash.push_back(0);
+    poseidon_bn254(&to_hash)
+}

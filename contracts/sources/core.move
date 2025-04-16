@@ -15,6 +15,7 @@ const EOLD_NULLIFIER_EXISTS: u64 = 0x3;
 const EINVALID_ROOT: u64 = 0x4;
 const EINSUFFICIENT_RECEIVED: u64 = 0x5;
 const ETOKEN_ALREADY_ALLOWED: u64 = 0x6;
+const EACCOUNT_ALREADY_INITIALIZED: u64 = 0x7;
 
 public struct Shroud has key, store {
     id: UID,
@@ -22,6 +23,7 @@ public struct Shroud has key, store {
     nullifiers: Table<u256, bool>,
     balances: ObjectBag,
     allowed_tokens: vector<TypeName>,
+    account_init: Table<address, bool>,
 }
 
 public struct ShroudAdmin has key {
@@ -64,6 +66,7 @@ fun init(ctx: &mut TxContext) {
         nullifiers: table::new(ctx),
         balances: object_bag::new(ctx),
         allowed_tokens: vector::empty(),
+        account_init: table::new(ctx),
     };
     transfer::share_object(shroud);
     transfer::transfer(ShroudAdmin { id: object::new(ctx) }, ctx.sender());
@@ -76,6 +79,21 @@ public fun allow_token<T>(shroud: &mut Shroud, ctx: &mut TxContext) {
     let tn = get<T>();
     shroud.allowed_tokens.push_back(tn);
     shroud.balances.add(tn, coin::zero<T>(ctx));
+}
+
+public fun initialize_account<T>(shroud: &mut Shroud, ctx: &mut TxContext) {
+    assert!(!shroud.account_init.contains(ctx.sender()), EACCOUNT_ALREADY_INITIALIZED);
+    shroud.account_init.add(ctx.sender(), true);
+
+    let coin_diff = coin_diff::empty(shroud.allowed_tokens);
+    let empty_leaf = coin_diff.empty_leaf();
+    let (index, root) = shroud.tree.insert(empty_leaf);
+
+    emit(LeafInserted {
+        index: index,
+        value: empty_leaf,
+        new_root: root,
+    });
 }
 
 public fun deposit<T>(
