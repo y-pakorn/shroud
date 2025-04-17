@@ -55,7 +55,13 @@ export function WalletButton({
     )
   }
 
-  return <WalletButtonContent variant="secondary" {...props} />
+  return (
+    <WalletButtonContent
+      variant="secondary"
+      className="bg-secondary/50"
+      {...props}
+    />
+  )
 }
 
 function ConnectedWalletButtonContent({
@@ -88,6 +94,7 @@ function ConnectedWalletButtonContent({
             </div>
           </div>
           <Button
+            variant="ghost"
             size="icon"
             className="ml-auto"
             onClick={async () => {
