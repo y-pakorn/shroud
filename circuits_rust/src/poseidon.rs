@@ -221,16 +221,18 @@ pub fn poseidon_bn254() -> PoseidonConfig<Fr> {
         ],
     ];
 
+    let ark: Vec<Vec<Fr>> = round_constants
+        .iter()
+        .map(|e| Fr::from_le_bytes_mod_order(&hex::decode(e).unwrap()))
+        .collect::<Vec<_>>()
+        .chunks(3)
+        .map(|chunk| chunk.to_vec())
+        .collect();
     let config = PoseidonConfig::<Fr> {
         full_rounds: 8,
         partial_rounds: 57,
         alpha: 5,
-        ark: round_constants
-            .map(|e| Fr::from_le_bytes_mod_order(&hex::decode(e).unwrap()))
-            .to_vec()
-            .chunks(3)
-            .map(|e| e.to_vec())
-            .collect(),
+        ark,
         mds: mds
             .map(|m| {
                 m.map(|e| Fr::from_le_bytes_mod_order(&hex::decode(e).unwrap()))

@@ -1,0 +1,17 @@
+{
+  "name": "circuits_rust",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "circuits_rust_bg.wasm",
+    "circuits_rust.js",
+    "circuits_rust_bg.js",
+    "circuits_rust.d.ts"
+  ],
+  "main": "circuits_rust.js",
+  "types": "circuits_rust.d.ts",
+  "sideEffects": [
+    "./circuits_rust.js",
+    "./snippets/*"
+  ]
+}

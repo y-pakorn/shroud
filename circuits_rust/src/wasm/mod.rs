@@ -136,98 +136,98 @@ impl State {
     pub fn wasm_get_leafs_length(&self) -> usize {
         self.merkle_leafs.len()
     }
+}
 
-    #[wasm_bindgen(js_name = prove)]
-    pub fn prove(
-        &mut self,
-        pk_bytes: Vec<u8>,
-        diffs: Vec<i64>,
-        is_public: bool,
-        aux: Option<String>,
-    ) -> JsValue {
-        // deserialize uncompressed pk
-        let pk = ProvingKey::<Bn254>::deserialize_uncompressed_unchecked(&pk_bytes[..])
-            .expect("Failed to deserialize pk");
-        let aux_fr = aux
-            .map(|a| Fr::from_le_bytes_mod_order(&hex::decode(&a).expect("Invalid aux hex string")))
-            .unwrap_or(Fr::ZERO);
-        let hasher = poseidon_bn254();
-        let before = self.account.balance.map(|b| Fr::from(b));
-        let diff: [Fr; ASSET_SIZE] = diffs
-            .iter()
-            .map(|b| Fr::from(*b))
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("Invalid diff sizes");
-        let after: [Fr; ASSET_SIZE] = before
-            .iter()
-            .zip(diff.iter())
-            .map(|(b, d)| b + d)
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("Invalid after sizes");
+#[wasm_bindgen]
+pub fn prove(
+    state: State,
+    pk_bytes: Vec<u8>,
+    diffs: Vec<i64>,
+    is_public: bool,
+    aux: Option<String>,
+) -> JsValue {
+    // deserialize uncompressed pk
+    let pk = ProvingKey::<Bn254>::deserialize_uncompressed_unchecked(&pk_bytes[..])
+        .expect("Failed to deserialize pk");
+    let aux_fr = aux
+        .map(|a| Fr::from_le_bytes_mod_order(&hex::decode(&a).expect("Invalid aux hex string")))
+        .unwrap_or(Fr::ZERO);
+    let hasher = poseidon_bn254();
+    let before = state.account.balance.map(|b| Fr::from(b));
+    let diff: [Fr; ASSET_SIZE] = diffs
+        .iter()
+        .map(|b| Fr::from(*b))
+        .collect::<Vec<_>>()
+        .try_into()
+        .expect("Invalid diff sizes");
+    let after: [Fr; ASSET_SIZE] = before
+        .iter()
+        .zip(diff.iter())
+        .map(|(b, d)| b + d)
+        .collect::<Vec<_>>()
+        .try_into()
+        .expect("Invalid after sizes");
 
-        let merkle_tree =
-            SparseMerkleTree::<LEVEL>::new_sequential(&self.merkle_leafs, &hasher, &Fr::ZERO)
-                .expect("Invalid merkle tree construction");
+    let merkle_tree =
+        SparseMerkleTree::<LEVEL>::new_sequential(&state.merkle_leafs, &hasher, &Fr::ZERO)
+            .expect("Invalid merkle tree construction");
 
-        let merkle_root = merkle_tree.root();
-        let merkle_path = self
-            .account
-            .index
-            .map(|i| merkle_tree.generate_membership_proof(i as u64))
-            .unwrap_or(Path::empty());
+    let merkle_root = merkle_tree.root();
+    let merkle_path = state
+        .account
+        .index
+        .map(|i| merkle_tree.generate_membership_proof(i as u64))
+        .unwrap_or(Path::empty());
 
-        let diff_hash = diff.iter().fold(Fr::ZERO, |acc, d| {
-            TwoToOneCRH::evaluate(&hasher, &acc, &d).expect("Diff hash failed")
-        });
+    let diff_hash = diff.iter().fold(Fr::ZERO, |acc, d| {
+        TwoToOneCRH::evaluate(&hasher, &acc, &d).expect("Diff hash failed")
+    });
 
-        let before_leaf = before.iter().fold(self.account.nonce, |acc, b| {
-            TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("Before leaf hash failed")
-        });
+    let before_leaf = before.iter().fold(state.account.nonce, |acc, b| {
+        TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("Before leaf hash failed")
+    });
 
-        let after_leaf = after.iter().fold(self.account.nonce, |acc, b| {
-            TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("After leaf hash failed")
-        });
+    let after_leaf = after.iter().fold(state.account.nonce, |acc, b| {
+        TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("After leaf hash failed")
+    });
 
-        let nullifier = TwoToOneCRH::evaluate(&hasher, &before_leaf, &self.account.nonce)
-            .expect("Nullifier hash failed");
+    let nullifier = TwoToOneCRH::evaluate(&hasher, &before_leaf, &state.account.nonce)
+        .expect("Nullifier hash failed");
 
-        let circuit = Circuit {
-            nonce: self.account.nonce,
-            address: self.account.address_fr,
-            public_address: if is_public {
-                self.account.address_fr
-            } else {
-                Fr::ZERO
-            },
-            before,
-            diff,
-            after,
-            merkle_root,
-            merkle_path,
-            diff_hash,
-            nullifier,
-            after_leaf,
-            hasher,
-            aux: aux_fr,
-        };
+    let circuit = Circuit {
+        nonce: state.account.nonce,
+        address: state.account.address_fr,
+        public_address: if is_public {
+            state.account.address_fr
+        } else {
+            Fr::ZERO
+        },
+        before,
+        diff,
+        after,
+        merkle_root,
+        merkle_path,
+        diff_hash,
+        nullifier,
+        after_leaf,
+        hasher,
+        aux: aux_fr,
+    };
 
-        let proof = Groth16::<Bn254>::prove(&pk, circuit, &mut thread_rng())
-            .expect("Proof generation failed");
+    let proof =
+        Groth16::<Bn254>::prove(&pk, circuit, &mut thread_rng()).expect("Proof generation failed");
 
-        let mut proof_bytes = vec![];
-        proof
-            .serialize_compressed(&mut proof_bytes)
-            .expect("Failed to serialize proof");
+    let mut proof_bytes = vec![];
+    proof
+        .serialize_compressed(&mut proof_bytes)
+        .expect("Failed to serialize proof");
 
-        to_value(&json!({
-            "proof": hex::encode(proof_bytes),
-            "nullifier": hex::encode(nullifier.into_bigint().to_bytes_le()),
-            "after_leaf": hex::encode(after_leaf.into_bigint().to_bytes_le()),
-            "diff_hash": hex::encode(diff_hash.into_bigint().to_bytes_le()),
-            "merkle_root": hex::encode(merkle_root.into_bigint().to_bytes_le()),
-        }))
-        .expect("Failed to serialize proof")
-    }
+    to_value(&json!({
+        "proof": hex::encode(proof_bytes),
+        "nullifier": hex::encode(nullifier.into_bigint().to_bytes_le()),
+        "after_leaf": hex::encode(after_leaf.into_bigint().to_bytes_le()),
+        "diff_hash": hex::encode(diff_hash.into_bigint().to_bytes_le()),
+        "merkle_root": hex::encode(merkle_root.into_bigint().to_bytes_le()),
+    }))
+    .expect("Failed to serialize proof")
 }
