@@ -1,6 +1,6 @@
 module shroud::merkle;
 
-use 0x2::poseidon::poseidon_bn254;
+use sui::poseidon::poseidon_bn254;
 use sui::table::{Self, Table};
 
 const EINVALID_INDEX: u64 = 0x200001;
