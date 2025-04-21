@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import BigNumber from "bignumber.js"
 import _ from "lodash"
-import { ChevronDown, EyeClosed, Wallet } from "lucide-react"
+import { ChevronDown, EyeClosed, Loader2, Pencil, Wallet } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
@@ -110,7 +111,7 @@ function DepositCard() {
   })
 
   const value = useMemo(() => {
-    const amount = parseFloat(_amount)
+    const amount = parseFloat(_amount?.replace(/,/g, ""))
 
     if (!amount) {
       form.clearErrors("amount")
@@ -266,7 +267,7 @@ function WithdrawCard() {
   })
 
   const value = useMemo(() => {
-    const amount = parseFloat(_amount)
+    const amount = parseFloat(_amount?.replace(/,/g, ""))
 
     if (!amount) {
       form.clearErrors("amount")
@@ -349,7 +350,7 @@ function WithdrawCard() {
                 }}
               >
                 <span>{formatter.number(balances.data?.[coin])}</span>
-                <Wallet />
+                <EyeClosed />
               </div>
             </div>
           </CardContent>
@@ -377,6 +378,10 @@ function SwapCard() {
 
   const schema = z.object({
     amount: z.string(),
+    slippagePct: z.coerce
+      .number()
+      .min(0, "Slippage must be greater than 0")
+      .max(100, "Slippage must be less than 100"),
     coinIn: z.enum(CURRENCY_LIST),
     coinOut: z.enum(CURRENCY_LIST),
   })
@@ -386,7 +391,10 @@ function SwapCard() {
     defaultValues: {
       coinIn: "SUI",
       coinOut: "USDC",
+      slippagePct: 1, // 1%
     },
+    mode: "onBlur",
+    reValidateMode: "onBlur",
   })
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -426,12 +434,15 @@ function SwapCard() {
     }
   }, [coinIn, coinOut])
 
-  const valueIn = useMemo(() => {
-    const amount = parseFloat(_amount)
+  const { valueIn, amount } = useMemo(() => {
+    const amount = parseFloat(_amount?.replace(/,/g, ""))
 
     if (!amount) {
       form.clearErrors("amount")
-      return null
+      return {
+        valueIn: null,
+        amount: null,
+      }
     }
 
     if (balances.data && amount > Number(balances.data?.[coinIn] || 0)) {
@@ -441,8 +452,47 @@ function SwapCard() {
     }
 
     const value = amount * (prices.data?.[coinIn] || 0)
-    return _.isNaN(value) ? null : value
+    return {
+      valueIn: _.isNaN(value) ? null : value,
+      amount: _.isNaN(amount) ? null : amount,
+    }
   }, [_amount, coinIn, prices.data])
+
+  const quote = useQuoteOut({
+    coinIn,
+    coinOut,
+    amount: amount || undefined,
+  })
+
+  const slippagePct = useWatch({
+    control: form.control,
+    name: "slippagePct",
+  })
+
+  const { valueOut, amountOut, priceImpactPct, minimumReceived } =
+    useMemo(() => {
+      if (!quote.data) {
+        return {
+          valueOut: null,
+          amountOut: null,
+          minimumReceived: null,
+          priceImpactPct: null,
+        }
+      }
+
+      const amountOut = new BigNumber(quote.data.amountOut)
+        .shiftedBy(-CURRENCY[coinOut].decimals)
+        .toNumber()
+
+      return {
+        valueOut: _.isNaN(amountOut)
+          ? null
+          : amountOut * (prices.data?.[coinOut] || 0),
+        amountOut: _.isNaN(amountOut) ? null : amountOut,
+        priceImpactPct: parseFloat(quote.data.priceImpact.toFixed(10)) * 100,
+        minimumReceived: amountOut * (1 - slippagePct / 100),
+      }
+    }, [quote.data, slippagePct])
 
   useEffect(() => {
     form.setValue("amount", "")
@@ -520,24 +570,31 @@ function SwapCard() {
                 }}
               >
                 <span>{formatter.number(balances.data?.[coinIn])}</span>
-                <Wallet />
+                <EyeClosed />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
-            <div>You will receive</div>
+            <div className="flex items-center gap-2">
+              <div>You will receive</div>
+              {quote.isFetching && <Loader2 className="size-4 animate-spin" />}
+            </div>
             <div className="flex items-center justify-between gap-2">
-              <Input
-                {...form.register("amount")}
-                onChange={handleAmountChange}
-                className="h-12 border-none! bg-transparent! p-0 text-3xl! font-medium focus-visible:ring-0"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck="false"
-                placeholder="0"
-              />
+              {quote.isPending ? (
+                <Skeleton className="h-12 w-40" />
+              ) : (
+                <Input
+                  value={amountOut ? formatter.number(amountOut) : "-"}
+                  readOnly
+                  className="h-12 border-none! bg-transparent! p-0 text-3xl! font-medium focus-visible:ring-0"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  placeholder="0"
+                />
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-12">
@@ -572,22 +629,44 @@ function SwapCard() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* <div className="flex items-center justify-between gap-2 text-sm">
+            <div className="flex items-center justify-between gap-2 text-sm">
               <div className="text-muted-foreground">
-                {value && formatter.usd(value)}
+                {valueOut && formatter.usd(valueOut)}
               </div>
-              <div
-                className="flex cursor-pointer items-center justify-end gap-1 [&>svg]:size-3"
-                onClick={() => {
-                  form.setValue("amount", balances.data?.[coin] ?? "0")
-                }}
-              >
-                <span>{formatter.number(balances.data?.[coin])}</span>
-                <Wallet />
-              </div>
-            </div> */}
+            </div>
           </CardContent>
         </Card>
+        {quote.data && (
+          <Card className="bg-background/10">
+            <CardContent className="*:even:text-muted-foreground grid grid-cols-2 space-y-1 *:even:text-end">
+              <div>Price Impact</div>
+              <div>{priceImpactPct && formatter.pct(priceImpactPct)}</div>
+              <div>Slippage</div>
+              <div className="flex items-center justify-end gap-2">
+                <div>{formatter.pct(slippagePct)}</div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Pencil className="size-4 cursor-pointer" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="space-y-1 p-2">
+                    <div>Slippage</div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={slippagePct}
+                        min={0}
+                        max={100}
+                        {...form.register("slippagePct")}
+                      />
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div>Minimum Received</div>
+              <div>{formatter.number(minimumReceived)}</div>
+            </CardContent>
+          </Card>
+        )}
         <Button
           className="w-full"
           size="lg"

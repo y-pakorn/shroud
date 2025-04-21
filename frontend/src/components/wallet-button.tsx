@@ -50,6 +50,7 @@ export function WalletButton({
       <ConnectedWalletButtonContent
         variant="secondary"
         currentAccount={currentAccount}
+        className="border"
         {...props}
       />
     )
@@ -58,7 +59,7 @@ export function WalletButton({
   return (
     <WalletButtonContent
       variant="secondary"
-      className="bg-secondary/50"
+      className="bg-secondary/50 border"
       {...props}
     />
   )

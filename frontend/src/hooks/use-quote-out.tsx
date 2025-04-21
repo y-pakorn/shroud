@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { buildTx, getQuote } from "@7kprotocol/sdk-ts"
+import { AggregatorQuoter, Protocol } from "@flowx-finance/sdk"
 import { useQuery } from "@tanstack/react-query"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
@@ -28,8 +29,12 @@ export const useQuoteOut = ({
   return useQuery({
     queryKey: ["quote-out", coinIn, coinOut, debouncedAmount],
     queryFn: async () => {
-      console.log(coinIn, coinOut, debouncedAmount)
-      const quote = await getQuote({
+      if (!debouncedAmount) {
+        return null
+      }
+
+      const quoter = new AggregatorQuoter("testnet")
+      const quote = await quoter.getRoutes({
         tokenIn: CURRENCY[coinIn].coinType,
         tokenOut: CURRENCY[coinOut].coinType,
         amountIn: new BigNumber(debouncedAmount || 0)

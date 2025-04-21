@@ -14,4 +14,10 @@ export const formatter = {
       optionalMantissa: true,
       currencySymbol: "$",
     }),
+  pct: (v?: any) =>
+    numbro(v || 0).format({
+      mantissa: 2,
+      thousandSeparated: true,
+      optionalMantissa: true,
+    }) + "%",
 }
