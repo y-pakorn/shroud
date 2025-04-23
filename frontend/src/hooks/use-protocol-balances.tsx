@@ -14,7 +14,7 @@ const _useBalances = create<{
         ) => Record<keyof typeof CURRENCY, string>)
   ) => void
 }>((set) => ({
-  balances: { ..._.mapValues(CURRENCY, () => "0"), SUI: "100" },
+  balances: { ..._.mapValues(CURRENCY, () => "0") },
   setBalances: (balances) =>
     set((state) => ({
       balances: _.isFunction(balances) ? balances(state.balances) : balances,

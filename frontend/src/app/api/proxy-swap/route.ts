@@ -7,7 +7,7 @@ import { fromHex, Hex } from "viem"
 import { z } from "zod"
 
 import { env } from "@/env.mjs"
-import { CONTRACT_ADDRESS, CORE_OBJECT } from "@/config/contract"
+import { contracts } from "@/config/contract"
 
 const schema = z.object({
   coinIn: z.string(),
@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
   const tx = new Transaction()
 
   const [coin, swapBalance] = tx.moveCall({
-    target: `${CONTRACT_ADDRESS}::core::start_swap`,
+    target: `${contracts.packageId}::core::start_swap`,
     arguments: [
-      tx.object(CORE_OBJECT),
+      tx.object(contracts.coreId),
       tx.pure.u64(amountIn),
       tx.pure.u64(minimumReceived),
       tx.pure.u256(fromHex(currentRoot as Hex, "bigint")),
@@ -56,19 +56,19 @@ export async function POST(request: NextRequest) {
   })
 
   const [finalCoin] = tx.moveCall({
-    target: `0xebebb67fc6fc6a74be5e57d90563c709631b4da86091c0926db81894add36ed3::router::swap_exact_input_direct`,
+    target: `${contracts.packageId}::router::swap`,
     arguments: [
-      tx.object(
-        "0xcbca62dbd54d3a8545f27a298872b1af9363a82a04a329504b1f0fef0a5f9ce4"
-      ),
+      tx.object(contracts.routerId),
       coin,
+      tx.pure.u64(minimumReceived),
     ],
     typeArguments: [coinIn, coinOut],
   })
 
   tx.moveCall({
-    target: `${CONTRACT_ADDRESS}::core::end_swap`,
-    arguments: [tx.object(CORE_OBJECT), swapBalance, finalCoin],
+    target: `${contracts.packageId}::core::end_swap`,
+    arguments: [tx.object(contracts.coreId), swapBalance, finalCoin],
+    typeArguments: [coinIn, coinOut],
   })
 
   const result = await client.signAndExecuteTransaction({

@@ -56,6 +56,9 @@ importers:
       bignumber.js:
         specifier: ^9.2.1
         version: 9.2.1
+      circuits_rust:
+        specifier: file:../circuits_rust/pkg
+        version: file:../circuits_rust/pkg
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1583,6 +1586,9 @@ packages:
   chalk@5.4.1:
     resolution: {integrity: sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsULR3HQYkm3w8FIA3SberyMJMSldGsW+U3w==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
+
+  circuits_rust@file:../circuits_rust/pkg:
+    resolution: {directory: ../circuits_rust/pkg, type: directory}
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
@@ -4583,6 +4589,8 @@ snapshots:
       supports-color: 7.2.0
 
   chalk@5.4.1: {}
+
+  circuits_rust@file:../circuits_rust/pkg: {}
 
   class-variance-authority@0.7.1:
     dependencies:

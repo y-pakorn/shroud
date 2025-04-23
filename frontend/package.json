@@ -11,6 +11,7 @@
     "format:check": "pnpm prettier ./src --check"
   },
   "dependencies": {
+    "circuits_rust": "file:../circuits_rust/pkg",
     "@7kprotocol/sdk-ts": "^2.4.0",
     "@flowx-finance/sdk": "^1.10.15",
     "@hookform/resolvers": "^5.0.1",

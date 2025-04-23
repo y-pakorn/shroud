@@ -10,7 +10,9 @@ import { z } from "zod"
 
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 import { formatter } from "@/lib/formatter"
+import { usePoolBalances } from "@/hooks/use-pool-balances"
 import { useProtocolBalances } from "@/hooks/use-protocol-balances"
+import { useProve } from "@/hooks/use-prove"
 import { useQuoteOut } from "@/hooks/use-quote-out"
 import { useTokenBalances } from "@/hooks/use-token-balances"
 import { useTokenPrices } from "@/hooks/use-token-prices"
@@ -34,6 +36,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { WalletButton } from "@/components/wallet-button"
 
 export default function Home() {
+  const proof = useProve()
+
   return (
     <main className="relative container py-8">
       <div className="fixed inset-0 z-[-1] h-screen w-screen scale-110 bg-[url('/bg.webp')] bg-cover bg-center opacity-35 blur-md" />
@@ -43,6 +47,7 @@ export default function Home() {
           <p className="text-sm">Trade with privacy on Sui</p>
         </div>
         <div className="flex-1" />
+        <Button onClick={() => proof.mutateAsync()}>Debug</Button>
         <WalletButton />
       </nav>
       <div className="absolute top-0 left-1/2 w-[500px] -translate-x-1/2 py-8">
@@ -80,7 +85,7 @@ function DepositCard() {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      coin: "SUI",
+      coin: "USDC",
     },
   })
 
@@ -236,7 +241,7 @@ function WithdrawCard() {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      coin: "SUI",
+      coin: "USDC",
     },
   })
 
@@ -389,8 +394,8 @@ function SwapCard() {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      coinIn: "SUI",
-      coinOut: "USDC",
+      coinIn: "USDC",
+      coinOut: "USDT",
       slippagePct: 1, // 1%
     },
     mode: "onBlur",
@@ -489,7 +494,7 @@ function SwapCard() {
           ? null
           : amountOut * (prices.data?.[coinOut] || 0),
         amountOut: _.isNaN(amountOut) ? null : amountOut,
-        priceImpactPct: parseFloat(quote.data.priceImpact.toFixed(10)) * 100,
+        priceImpactPct: quote.data.priceImact * 100,
         minimumReceived: amountOut * (1 - slippagePct / 100),
       }
     }, [quote.data, slippagePct])

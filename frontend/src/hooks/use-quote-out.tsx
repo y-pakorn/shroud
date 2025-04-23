@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
-import { buildTx, getQuote } from "@7kprotocol/sdk-ts"
-import { AggregatorQuoter, Protocol } from "@flowx-finance/sdk"
 import { useQuery } from "@tanstack/react-query"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 
 import { CURRENCY } from "@/config/currency"
+
+import { useTokenPrices } from "./use-token-prices"
 
 export const useQuoteOut = ({
   coinIn,
@@ -16,6 +16,8 @@ export const useQuoteOut = ({
   coinOut: keyof typeof CURRENCY
   amount?: number
 }) => {
+  const prices = useTokenPrices()
+
   const [debouncedAmount, _setDebouncedAmount] = useState(amount)
   const setDebouncedAmount = useMemo(
     () => _.debounce(_setDebouncedAmount, 500),
@@ -33,16 +35,33 @@ export const useQuoteOut = ({
         return null
       }
 
-      const quoter = new AggregatorQuoter("testnet")
-      const quote = await quoter.getRoutes({
-        tokenIn: CURRENCY[coinIn].coinType,
-        tokenOut: CURRENCY[coinOut].coinType,
-        amountIn: new BigNumber(debouncedAmount || 0)
-          .shiftedBy(CURRENCY[coinIn].decimals)
-          .integerValue(BigNumber.ROUND_FLOOR)
-          .toString(),
-      })
-      return quote
+      const priceIn = prices.data?.[coinIn] || 0
+      const priceOut = prices.data?.[coinOut] || 0
+
+      if (!priceIn || !priceOut) {
+        return null
+      }
+
+      const amountOut = new BigNumber(debouncedAmount)
+        .multipliedBy(priceIn)
+        .dividedBy(priceOut)
+      const valueOut = amountOut.multipliedBy(priceOut).toNumber()
+
+      return {
+        amountOut: amountOut.shiftedBy(CURRENCY[coinOut].decimals),
+        // <100$ => 0.01%, ..., 1000000$ => 10%
+        priceImact: Math.min(
+          0.1, // 10% max
+          Math.max(
+            0.0001, // 0.01% min
+            valueOut < 100
+              ? 0.0001 // 0.01% for <$100
+              : valueOut < 1000000
+                ? (Math.log10(valueOut) - 2) / 100 // Logarithmic scaling between $100-$1M
+                : 0.1 // 10% for >$1M
+          )
+        ),
+      }
     },
   })
 }

@@ -12,6 +12,7 @@ export const useTokenPrices = ({
 }: Partial<UseQueryOptions<TokenPrices>> = {}) => {
   return useQuery({
     queryKey: ["token-prices"],
+    refetchInterval: 1000 * 20, // 20s
     queryFn: async () => {
       const connection = new HermesClient("https://hermes.pyth.network", {}) // See Hermes endpoints section below for other endpoints
       const price = await connection.getLatestPriceUpdates(
