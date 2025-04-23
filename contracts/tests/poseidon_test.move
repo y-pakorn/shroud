@@ -14,4 +14,7 @@ fun correct_poseidon_hash() {
     let output = poseidon_bn254(0, 0);
 
     assert!(output_native == output);
+
+    std::debug::print(&output_native);
+    std::debug::print(&output);
 }

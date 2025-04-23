@@ -1,8 +1,5 @@
 use ark_bn254::{Bn254, Fr};
-use ark_crypto_primitives::{
-    crh::{poseidon::TwoToOneCRH, TwoToOneCRHScheme},
-    snark::SNARK,
-};
+use ark_crypto_primitives::snark::SNARK;
 use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
 use ark_groth16::{Groth16, ProvingKey};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -13,7 +10,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     merkle_tree::{Path, SparseMerkleTree},
-    poseidon::poseidon_bn254,
+    poseidon::{poseidon_bn254, PoseidonHash},
     Circuit, ASSET_SIZE, LEVEL,
 };
 
@@ -152,7 +149,7 @@ pub fn prove(
     let aux_fr = aux
         .map(|a| Fr::from_le_bytes_mod_order(&hex::decode(&a).expect("Invalid aux hex string")))
         .unwrap_or(Fr::ZERO);
-    let hasher = poseidon_bn254();
+    let hasher = PoseidonHash::new(poseidon_bn254());
     let before = state.account.balance.map(|b| Fr::from(b));
     let diff: [Fr; ASSET_SIZE] = diffs
         .iter()
@@ -179,20 +176,17 @@ pub fn prove(
         .map(|i| merkle_tree.generate_membership_proof(i as u64))
         .unwrap_or(Path::empty());
 
-    let diff_hash = diff.iter().fold(Fr::ZERO, |acc, d| {
-        TwoToOneCRH::evaluate(&hasher, &acc, &d).expect("Diff hash failed")
-    });
+    let diff_hash = diff.iter().fold(Fr::ZERO, |acc, d| hasher.hash(&acc, &d));
 
-    let before_leaf = before.iter().fold(state.account.nonce, |acc, b| {
-        TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("Before leaf hash failed")
-    });
+    let before_leaf = before
+        .iter()
+        .fold(state.account.nonce, |acc, b| hasher.hash(&acc, &b));
 
-    let after_leaf = after.iter().fold(state.account.nonce, |acc, b| {
-        TwoToOneCRH::evaluate(&hasher, &acc, &b).expect("After leaf hash failed")
-    });
+    let after_leaf = after
+        .iter()
+        .fold(state.account.nonce, |acc, b| hasher.hash(&acc, &b));
 
-    let nullifier = TwoToOneCRH::evaluate(&hasher, &before_leaf, &state.account.nonce)
-        .expect("Nullifier hash failed");
+    let nullifier = hasher.hash(&before_leaf, &state.account.nonce);
 
     let circuit = Circuit {
         nonce: state.account.nonce,

@@ -5,16 +5,6 @@ use std::{
 
 use anyhow::anyhow;
 use ark_bn254::Fr;
-use ark_crypto_primitives::{
-    crh::{
-        poseidon::{
-            constraints::{CRHParametersVar as PoseidonParameterVar, TwoToOneCRHGadget},
-            TwoToOneCRH,
-        },
-        TwoToOneCRHScheme, TwoToOneCRHSchemeGadget,
-    },
-    sponge::poseidon::PoseidonConfig,
-};
 use ark_ff::{AdditiveGroup, Field};
 use ark_r1cs_std::{
     fields::fp::FpVar,
@@ -22,6 +12,8 @@ use ark_r1cs_std::{
     select::CondSelectGadget,
 };
 use ark_relations::r1cs::{Namespace, SynthesisError};
+
+use crate::poseidon::{PoseidonHash, PoseidonHashVar};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Path<const N: usize> {
@@ -43,13 +35,13 @@ impl<const N: usize> Path<N> {
         &self,
         root_hash: &Fr,
         leaf: &Fr,
-        hasher: &PoseidonConfig<Fr>,
+        hasher: &PoseidonHash,
     ) -> anyhow::Result<bool> {
         let root = self.calculate_root(leaf, hasher)?;
         Ok(root == *root_hash)
     }
 
-    pub fn calculate_root(&self, leaf: &Fr, hasher: &PoseidonConfig<Fr>) -> anyhow::Result<Fr> {
+    pub fn calculate_root(&self, leaf: &Fr, hasher: &PoseidonHash) -> anyhow::Result<Fr> {
         if *leaf != self.path[0].0 && *leaf != self.path[0].1 {
             return Err(anyhow!("Invalid leaf"));
         }
@@ -60,8 +52,7 @@ impl<const N: usize> Path<N> {
             if &prev != left_hash && &prev != right_hash {
                 return Err(anyhow!("Invalid path nodes"));
             }
-            prev = TwoToOneCRH::evaluate(hasher, left_hash, right_hash)
-                .map_err(|e| anyhow!("Hasher error: {}", e))?;
+            prev = hasher.hash(left_hash, right_hash);
         }
 
         Ok(prev)
@@ -74,7 +65,7 @@ impl<const N: usize> Path<N> {
         &self,
         root_hash: &Fr,
         leaf: &Fr,
-        hasher: &PoseidonConfig<Fr>,
+        hasher: &PoseidonHash,
     ) -> anyhow::Result<Fr> {
         if !self.check_membership(root_hash, leaf, hasher)? {
             return Err(anyhow!("Invalid leaf"));
@@ -90,8 +81,7 @@ impl<const N: usize> Path<N> {
                 index += twopower;
             }
             twopower = twopower + twopower;
-            prev = TwoToOneCRH::evaluate(hasher, left_hash, right_hash)
-                .map_err(|e| anyhow!("Hasher error: {}", e))?;
+            prev = hasher.hash(left_hash, right_hash);
         }
 
         Ok(index)
@@ -112,7 +102,7 @@ impl<const N: usize> SparseMerkleTree<N> {
     pub fn insert_batch(
         &mut self,
         leaves: &BTreeMap<u32, Fr>,
-        hasher: &PoseidonConfig<Fr>,
+        hasher: &PoseidonHash,
     ) -> anyhow::Result<()> {
         let last_level_index: u64 = (1u64 << N) - 1;
 
@@ -132,8 +122,7 @@ impl<const N: usize> SparseMerkleTree<N> {
                 let empty_hash = self.empty_hashes[level];
                 let left = self.tree.get(&left_index).unwrap_or(&empty_hash);
                 let right = self.tree.get(&right_index).unwrap_or(&empty_hash);
-                let hashed = TwoToOneCRH::evaluate(hasher, left, right)
-                    .map_err(|e| anyhow!("Hasher error: {}", e))?;
+                let hashed = hasher.hash(left, right);
                 self.tree.insert(i, hashed);
 
                 let parent = match i > 0 {
@@ -152,7 +141,7 @@ impl<const N: usize> SparseMerkleTree<N> {
     /// elements.
     pub fn new(
         leaves: &BTreeMap<u32, Fr>,
-        hasher: &PoseidonConfig<Fr>,
+        hasher: &PoseidonHash,
         empty_leaf: &Fr,
     ) -> anyhow::Result<Self> {
         // Ensure the tree can hold this many leaves
@@ -170,8 +159,7 @@ impl<const N: usize> SparseMerkleTree<N> {
             empty_hashes[0] = empty_hash;
 
             for hash in empty_hashes.iter_mut().skip(1) {
-                empty_hash = TwoToOneCRH::evaluate(hasher, &empty_hash, &empty_hash)
-                    .map_err(|e| anyhow!("Hasher error: {}", e))?;
+                empty_hash = hasher.hash(&empty_hash, &empty_hash);
                 *hash = empty_hash;
             }
 
@@ -187,7 +175,7 @@ impl<const N: usize> SparseMerkleTree<N> {
     /// Creates a new Sparse Merkle Tree from an array of field elements.
     pub fn new_sequential(
         leaves: &[Fr],
-        hasher: &PoseidonConfig<Fr>,
+        hasher: &PoseidonHash,
         empty_leaf: &Fr,
     ) -> anyhow::Result<Self> {
         let pairs: BTreeMap<u32, Fr> = leaves
@@ -257,7 +245,7 @@ impl<const N: usize> PathVar<N> {
         &self,
         root: &FpVar<Fr>,
         leaf: &FpVar<Fr>,
-        hasher: &PoseidonParameterVar<Fr>,
+        hasher: &PoseidonHashVar,
     ) -> Result<Boolean<Fr>, SynthesisError> {
         let computed_root = self.root_hash(leaf, hasher)?;
 
@@ -268,7 +256,7 @@ impl<const N: usize> PathVar<N> {
     pub fn root_hash(
         &self,
         leaf: &FpVar<Fr>,
-        hasher: &PoseidonParameterVar<Fr>,
+        hasher: &PoseidonHashVar,
     ) -> Result<FpVar<Fr>, SynthesisError> {
         assert_eq!(self.path.len(), N);
         let mut previous_hash = leaf.clone();
@@ -281,7 +269,7 @@ impl<const N: usize> PathVar<N> {
             let right_hash =
                 FpVar::conditionally_select(&previous_is_left, p_right_hash, &previous_hash)?;
 
-            previous_hash = TwoToOneCRHGadget::evaluate(hasher, &left_hash, &right_hash)?;
+            previous_hash = hasher.hash(&left_hash, &right_hash)?;
         }
 
         Ok(previous_hash)
@@ -291,7 +279,7 @@ impl<const N: usize> PathVar<N> {
     pub fn get_index(
         &self,
         leaf: &FpVar<Fr>,
-        hasher: &PoseidonParameterVar<Fr>,
+        hasher: &PoseidonHashVar,
     ) -> Result<FpVar<Fr>, SynthesisError> {
         let mut index = FpVar::<Fr>::zero();
         let mut twopower = FpVar::<Fr>::one();
@@ -307,7 +295,7 @@ impl<const N: usize> PathVar<N> {
             index = FpVar::<Fr>::conditionally_select(&previous_is_left, &index, &rightvalue)?;
             twopower = &twopower + &twopower;
 
-            previous_hash = TwoToOneCRHGadget::evaluate(hasher, &left_hash, &right_hash)?;
+            previous_hash = hasher.hash(&left_hash, &right_hash)?;
         }
 
         Ok(index)

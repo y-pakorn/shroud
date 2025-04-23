@@ -115,12 +115,6 @@ fun verify_proof(
 }
 
 fun init(ctx: &mut TxContext) {
-    transfer::transfer(ShroudAdmin { id: object::new(ctx) }, ctx.sender());
-}
-
-// --- FUNCTIONS ---
-
-public fun initialize(_: &mut ShroudAdmin, ctx: &mut TxContext): ID {
     let level = 20;
     let valid_size = 20;
     let default_leaf = 0;
@@ -134,10 +128,11 @@ public fun initialize(_: &mut ShroudAdmin, ctx: &mut TxContext): ID {
         allowed_tokens: vector::empty(),
         keys: bag::new(ctx),
     };
-    let id = shroud.id.to_inner();
     transfer::share_object(shroud);
-    id
+    transfer::transfer(ShroudAdmin { id: object::new(ctx) }, ctx.sender());
 }
+
+// --- FUNCTIONS ---
 
 public fun initialize_prover(_: &mut ShroudAdmin, shroud: &mut Shroud, vk_bytes: vector<u8>) {
     set_vk(shroud, vk_bytes);

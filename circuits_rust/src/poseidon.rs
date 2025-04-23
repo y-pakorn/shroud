@@ -1,6 +1,21 @@
+use std::borrow::Borrow;
+
 use ark_bn254::Fr;
-use ark_crypto_primitives::sponge::poseidon::PoseidonConfig;
+use ark_crypto_primitives::{
+    crh::poseidon::constraints::CRHParametersVar,
+    sponge::{
+        constraints::CryptographicSpongeVar,
+        poseidon::{constraints::PoseidonSpongeVar, PoseidonConfig, PoseidonSponge},
+        CryptographicSponge,
+    },
+};
 use ark_ff::PrimeField;
+use ark_r1cs_std::{
+    alloc::{AllocVar, AllocationMode},
+    fields::fp::FpVar,
+    R1CSVar,
+};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 /// Poseidon width = 3 and alpha = 5 for BN254
 /// Generated from `sage generate_params_poseidon.sage 1 0 254 3 5 128 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001`
@@ -223,7 +238,7 @@ pub fn poseidon_bn254() -> PoseidonConfig<Fr> {
 
     let ark: Vec<Vec<Fr>> = round_constants
         .iter()
-        .map(|e| Fr::from_le_bytes_mod_order(&hex::decode(e).unwrap()))
+        .map(|e| Fr::from_be_bytes_mod_order(&hex::decode(e).unwrap()))
         .collect::<Vec<_>>()
         .chunks(3)
         .map(|chunk| chunk.to_vec())
@@ -235,7 +250,7 @@ pub fn poseidon_bn254() -> PoseidonConfig<Fr> {
         ark,
         mds: mds
             .map(|m| {
-                m.map(|e| Fr::from_le_bytes_mod_order(&hex::decode(e).unwrap()))
+                m.map(|e| Fr::from_be_bytes_mod_order(&hex::decode(e).unwrap()))
                     .to_vec()
             })
             .to_vec(),
@@ -244,4 +259,75 @@ pub fn poseidon_bn254() -> PoseidonConfig<Fr> {
     };
 
     config
+}
+
+#[derive(Debug, Clone)]
+pub struct PoseidonHash {
+    pub config: PoseidonConfig<Fr>,
+}
+
+impl PoseidonHash {
+    pub fn new(config: PoseidonConfig<Fr>) -> Self {
+        Self { config }
+    }
+
+    pub fn hash(&self, left: &Fr, right: &Fr) -> Fr {
+        let mut sponge = PoseidonSponge::new(&self.config);
+        sponge.absorb(left);
+        sponge.absorb(right);
+        sponge.squeeze_field_elements::<Fr>(1);
+        sponge.state[0]
+    }
+}
+
+pub struct PoseidonHashVar {
+    pub config: CRHParametersVar<Fr>,
+}
+
+impl PoseidonHashVar {
+    pub fn hash(&self, left: &FpVar<Fr>, right: &FpVar<Fr>) -> Result<FpVar<Fr>, SynthesisError> {
+        let cs = left.cs().or(right.cs());
+
+        if cs.is_none() {
+            Ok(FpVar::Constant(
+                PoseidonHash::new(self.config.parameters.clone())
+                    .hash(&left.value()?, &right.value()?),
+            ))
+        } else {
+            let mut sponge = PoseidonSpongeVar::new(cs, &self.config.parameters);
+            sponge.absorb(left)?;
+            sponge.absorb(right)?;
+            sponge.squeeze_field_elements(1)?;
+            Ok(sponge.state[0].clone())
+        }
+    }
+}
+
+impl AllocVar<PoseidonHash, Fr> for PoseidonHashVar {
+    fn new_variable<T: Borrow<PoseidonHash>>(
+        cs: impl Into<Namespace<Fr>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        f().and_then(|param| {
+            let parameters = param.borrow();
+
+            let parameters = CRHParametersVar::new_variable(cs, || Ok(&parameters.config), mode)?;
+            Ok(Self { config: parameters })
+        })
+    }
+}
+
+impl AllocVar<PoseidonConfig<Fr>, Fr> for PoseidonHashVar {
+    fn new_variable<T: Borrow<PoseidonConfig<Fr>>>(
+        cs: impl Into<Namespace<Fr>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        f().and_then(|param| {
+            let parameters = param.borrow();
+            let parameters = CRHParametersVar::new_variable(cs, || Ok(parameters), mode)?;
+            Ok(Self { config: parameters })
+        })
+    }
 }
