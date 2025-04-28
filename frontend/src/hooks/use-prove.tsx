@@ -1,30 +1,85 @@
+import { useSuiClient } from "@mysten/dapp-kit"
 import { useMutation } from "@tanstack/react-query"
-import { fromHex, Hex } from "viem"
+import BigNumber from "bignumber.js"
+import _ from "lodash"
+import { fromHex, Hex, toHex } from "viem"
+
+import { contracts } from "@/config/contract"
+import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
+
+import { useWorker } from "./use-worker"
 
 export const useProve = () => {
+  const client = useSuiClient()
+  const { prove } = useWorker()
+
+  const getAllLeafs = async () => {
+    const leafs: string[] = []
+    let cursor = null
+    while (true) {
+      const events = await client.queryEvents({
+        query: {
+          MoveEventType: `${contracts.packageId}::core::LeafInserted`,
+        },
+        limit: 100,
+        order: "descending",
+      })
+
+      for (const event of events.data) {
+        const parsed = event.parsedJson as {
+          index: string
+          value: string
+          new_root: string
+        }
+        leafs.push(
+          toHex(BigInt(parsed.value), {
+            size: 32,
+          }).replace(/^0x/, "")
+        )
+      }
+      cursor = events.nextCursor
+      if (!events.hasNextPage) {
+        break
+      }
+    }
+    leafs.reverse()
+    return leafs
+  }
+
   return useMutation({
-    mutationFn: async () => {
-      console.log("Importing wasm")
-      const wasm = await import("circuits_rust")
-      console.log("Got wasm")
-      const address =
-        "0xe5a00e3673d102b84e0010df5a1387524a574f0b88c6252ef2fef8a3caf49f80"
-      const nonce =
-        "e5a00e3673d102b84e0010df5a1387524a574f0b88c6252ef2fef8a3caf49f80"
-      const account = wasm.Account.new(address, nonce)
-      const state = wasm.State.new(account)
-      console.log("Initialized state, fetching pk")
+    mutationFn: async ({
+      account,
+      diffs,
+      isPublic,
+    }: {
+      account: Uint8Array
+      diffs: Partial<Record<keyof typeof CURRENCY, string>>
+      isPublic: boolean
+    }) => {
+      console.log("Start proving...")
+      const leafs = await getAllLeafs()
+      console.log(leafs)
       const pk = await fetch("/api/pk").then((r) => r.json())
-      console.log("Got pk, proving")
-      const proof = wasm.prove(
-        state,
-        fromHex(pk as Hex, "bytes"),
-        new BigInt64Array([1n, 0n, 0n, 0n, 0n]),
-        true,
-        null
-      )
-      console.log("Proved")
-      console.log(proof)
+      const diffsArray = CURRENCY_LIST.map((c) => {
+        const cur = CURRENCY[c]
+        return BigInt(
+          new BigNumber(diffs[c] ?? 0)
+            .shiftedBy(cur.decimals)
+            .integerValue(BigNumber.ROUND_FLOOR)
+            .toString()
+        )
+      })
+      console.log("Diff", diffsArray)
+      const proof = await prove({
+        account,
+        leafs,
+        pk_bytes: fromHex(pk as Hex, "bytes"),
+        diffs: new BigInt64Array(diffsArray),
+        is_public: isPublic,
+        aux: null,
+      })
+
+      return proof
     },
   })
 }

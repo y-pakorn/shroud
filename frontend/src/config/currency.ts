@@ -20,6 +20,7 @@ export const CURRENCY = {
     coinType: `${contracts.packageId}::usdc::USDC`,
     pythId:
       "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+    faucetAmount: 1000,
   },
   USDT: {
     id: "USDT",
@@ -30,6 +31,7 @@ export const CURRENCY = {
     coinType: `${contracts.packageId}::usdt::USDT`,
     pythId:
       "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+    faucetAmount: 1000,
   },
   BTC: {
     id: "BTC",
@@ -40,6 +42,7 @@ export const CURRENCY = {
     coinType: `${contracts.packageId}::btc::BTC`,
     pythId:
       "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
+    faucetAmount: 0.01,
   },
   ETH: {
     id: "ETH",
@@ -50,6 +53,7 @@ export const CURRENCY = {
     coinType: `${contracts.packageId}::eth::ETH`,
     pythId:
       "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+    faucetAmount: 0.1,
   },
   WAL: {
     id: "WAL",
@@ -60,6 +64,7 @@ export const CURRENCY = {
     coinType: `${contracts.packageId}::wal::WAL`,
     pythId:
       "0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341",
+    faucetAmount: 100,
   },
 }
 

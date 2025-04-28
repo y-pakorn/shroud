@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography"
+import { getFaucetHost, requestSuiFromFaucetV0 } from "@mysten/sui/faucet"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { fromHex, Hex } from "viem"
@@ -12,8 +13,8 @@ import { contracts } from "@/config/contract"
 const schema = z.object({
   coinIn: z.string(),
   coinOut: z.string(),
-  amountIn: z.number(),
-  minimumReceived: z.number(),
+  amountOut: z.string(),
+  minimumReceived: z.string(),
   currentRoot: z.string(),
   nullifier: z.string(),
   newLeaf: z.string(),
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   const {
     coinIn,
     coinOut,
-    amountIn,
+    amountOut,
     minimumReceived,
     currentRoot,
     nullifier,
@@ -35,8 +36,15 @@ export async function POST(request: NextRequest) {
 
   const keypair = decodeSuiPrivateKey(env.PROXY_PRIVATE_KEY)
   const signer = Ed25519Keypair.fromSecretKey(keypair.secretKey)
+
+  try {
+    await requestSuiFromFaucetV0({
+      host: getFaucetHost("devnet"),
+      recipient: signer.toSuiAddress(),
+    })
+  } catch (e) {}
   const client = new SuiClient({
-    url: getFullnodeUrl("testnet"),
+    url: getFullnodeUrl("devnet"),
   })
 
   const tx = new Transaction()
@@ -45,14 +53,14 @@ export async function POST(request: NextRequest) {
     target: `${contracts.packageId}::core::start_swap`,
     arguments: [
       tx.object(contracts.coreId),
-      tx.pure.u64(amountIn),
+      tx.pure.u64(amountOut.replace(/^-/, "")),
       tx.pure.u64(minimumReceived),
       tx.pure.u256(fromHex(currentRoot as Hex, "bigint")),
       tx.pure.u256(fromHex(nullifier as Hex, "bigint")),
       tx.pure.u256(fromHex(newLeaf as Hex, "bigint")),
       tx.pure.vector("u8", fromHex(proof as Hex, "bytes")),
     ],
-    typeArguments: [coinIn, coinOut],
+    typeArguments: [coinOut, coinIn],
   })
 
   const [finalCoin] = tx.moveCall({
@@ -62,14 +70,16 @@ export async function POST(request: NextRequest) {
       coin,
       tx.pure.u64(minimumReceived),
     ],
-    typeArguments: [coinIn, coinOut],
+    typeArguments: [coinOut, coinIn],
   })
 
   tx.moveCall({
     target: `${contracts.packageId}::core::end_swap`,
     arguments: [tx.object(contracts.coreId), swapBalance, finalCoin],
-    typeArguments: [coinIn, coinOut],
+    typeArguments: [coinOut, coinIn],
   })
+
+  tx.setSender(signer.toSuiAddress())
 
   const result = await client.signAndExecuteTransaction({
     transaction: tx,

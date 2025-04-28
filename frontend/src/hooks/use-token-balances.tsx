@@ -1,11 +1,21 @@
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
-import { useQuery, UseQueryOptions } from "@tanstack/react-query"
+import { QueryClient, useQuery, UseQueryOptions } from "@tanstack/react-query"
 import { BigNumber } from "bignumber.js"
 import _ from "lodash"
 
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 
 export type TokenBalances = Record<keyof typeof CURRENCY, string>
+
+export const refreshTokenBalances = async (
+  client: QueryClient,
+  address: string
+) => {
+  client.invalidateQueries({
+    exact: true,
+    queryKey: ["token-balances", address],
+  })
+}
 
 export const useTokenBalances = ({
   ...options

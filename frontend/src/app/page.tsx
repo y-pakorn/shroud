@@ -10,12 +10,15 @@ import { z } from "zod"
 
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 import { formatter } from "@/lib/formatter"
+import { useDeposit } from "@/hooks/use-deposit"
 import { usePoolBalances } from "@/hooks/use-pool-balances"
 import { useProtocolBalances } from "@/hooks/use-protocol-balances"
 import { useProve } from "@/hooks/use-prove"
 import { useQuoteOut } from "@/hooks/use-quote-out"
+import { useSwap } from "@/hooks/use-swap"
 import { useTokenBalances } from "@/hooks/use-token-balances"
 import { useTokenPrices } from "@/hooks/use-token-prices"
+import { useWithdraw } from "@/hooks/use-withdraw"
 import {
   Tabs,
   TabsContent,
@@ -33,23 +36,13 @@ import {
 import { Form } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { WalletButton } from "@/components/wallet-button"
+import { NavBar } from "@/components/nav-bar"
 
 export default function Home() {
-  const proof = useProve()
-
   return (
     <main className="relative container py-8">
       <div className="fixed inset-0 z-[-1] h-screen w-screen scale-110 bg-[url('/bg.webp')] bg-cover bg-center opacity-35 blur-md" />
-      <nav className="flex h-10 items-center">
-        <div className="-space-y-1">
-          <h1 className="text-2xl font-bold italic">SHROUD</h1>
-          <p className="text-sm">Trade with privacy on Sui</p>
-        </div>
-        <div className="flex-1" />
-        <Button onClick={() => proof.mutateAsync()}>Debug</Button>
-        <WalletButton />
-      </nav>
+      <NavBar />
       <div className="absolute top-0 left-1/2 w-[500px] -translate-x-1/2 py-8">
         <Tabs defaultValue="swap">
           <TabsList>
@@ -74,6 +67,7 @@ export default function Home() {
 }
 
 function DepositCard() {
+  const deposit = useDeposit()
   const balances = useTokenBalances()
   const prices = useTokenPrices()
 
@@ -138,9 +132,17 @@ function DepositCard() {
     form.clearErrors()
   }, [coin])
 
+  const handleSubmit = async (data: z.infer<typeof schema>) => {
+    await deposit.mutateAsync({
+      amount: data.amount,
+      currency: data.coin,
+    })
+    form.resetField("amount")
+  }
+
   return (
     <Form {...form}>
-      <div className="space-y-2">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
             <div>You will deposit</div>
@@ -215,7 +217,11 @@ function DepositCard() {
         <Button
           className="w-full"
           size="lg"
-          disabled={!value || _.size(form.formState.errors) > 0}
+          disabled={
+            !value ||
+            _.size(form.formState.errors) > 0 ||
+            form.formState.isSubmitting
+          }
         >
           {_.chain(form.formState.errors)
             .values()
@@ -223,13 +229,15 @@ function DepositCard() {
             .compact()
             .first()
             .value() || "Deposit"}
+          {form.formState.isSubmitting && <Loader2 className="animate-spin" />}
         </Button>
-      </div>
+      </form>
     </Form>
   )
 }
 
 function WithdrawCard() {
+  const withdraw = useWithdraw()
   const balances = useProtocolBalances()
   const prices = useTokenPrices()
 
@@ -294,9 +302,17 @@ function WithdrawCard() {
     form.clearErrors()
   }, [coin])
 
+  const handleSubmit = async (data: z.infer<typeof schema>) => {
+    await withdraw.mutateAsync({
+      amount: data.amount,
+      currency: data.coin,
+    })
+    form.resetField("amount")
+  }
+
   return (
     <Form {...form}>
-      <div className="space-y-2">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
             <div>You will withdraw</div>
@@ -363,7 +379,11 @@ function WithdrawCard() {
         <Button
           className="w-full"
           size="lg"
-          disabled={!value || _.size(form.formState.errors) > 0}
+          disabled={
+            !value ||
+            _.size(form.formState.errors) > 0 ||
+            form.formState.isSubmitting
+          }
         >
           {_.chain(form.formState.errors)
             .values()
@@ -371,13 +391,15 @@ function WithdrawCard() {
             .compact()
             .first()
             .value() || "Withdraw"}
+          {form.formState.isSubmitting && <Loader2 className="animate-spin" />}
         </Button>
-      </div>
+      </form>
     </Form>
   )
 }
 
 function SwapCard() {
+  const swap = useSwap()
   const balances = useProtocolBalances()
   const prices = useTokenPrices()
 
@@ -394,12 +416,10 @@ function SwapCard() {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      coinIn: "USDC",
-      coinOut: "USDT",
-      slippagePct: 1, // 1%
+      coinOut: "USDC",
+      coinIn: "USDT",
+      slippagePct: 0.1, // 0.1%
     },
-    mode: "onBlur",
-    reValidateMode: "onBlur",
   })
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,33 +455,33 @@ function SwapCard() {
 
   useEffect(() => {
     if (coinIn === coinOut) {
-      form.setValue("coinOut", CURRENCY_LIST.find((c) => c !== coinIn)!)
+      form.setValue("coinIn", CURRENCY_LIST.find((c) => c !== coinOut)!)
     }
   }, [coinIn, coinOut])
 
-  const { valueIn, amount } = useMemo(() => {
+  const { valueOut, amount } = useMemo(() => {
     const amount = parseFloat(_amount?.replace(/,/g, ""))
 
     if (!amount) {
       form.clearErrors("amount")
       return {
-        valueIn: null,
+        valueOut: null,
         amount: null,
       }
     }
 
-    if (balances.data && amount > Number(balances.data?.[coinIn] || 0)) {
+    if (balances.data && amount > Number(balances.data?.[coinOut] || 0)) {
       form.setError("amount", {
         message: "Insufficient balance",
       })
     }
 
-    const value = amount * (prices.data?.[coinIn] || 0)
+    const value = amount * (prices.data?.[coinOut] || 0)
     return {
-      valueIn: _.isNaN(value) ? null : value,
+      valueOut: _.isNaN(value) ? null : value,
       amount: _.isNaN(amount) ? null : amount,
     }
-  }, [_amount, coinIn, prices.data])
+  }, [_amount, coinOut, prices.data])
 
   const quote = useQuoteOut({
     coinIn,
@@ -474,39 +494,48 @@ function SwapCard() {
     name: "slippagePct",
   })
 
-  const { valueOut, amountOut, priceImpactPct, minimumReceived } =
-    useMemo(() => {
-      if (!quote.data) {
-        return {
-          valueOut: null,
-          amountOut: null,
-          minimumReceived: null,
-          priceImpactPct: null,
-        }
-      }
-
-      const amountOut = new BigNumber(quote.data.amountOut)
-        .shiftedBy(-CURRENCY[coinOut].decimals)
-        .toNumber()
-
+  const { valueIn, amountIn, priceImpactPct, minimumReceived } = useMemo(() => {
+    if (!quote.data) {
       return {
-        valueOut: _.isNaN(amountOut)
-          ? null
-          : amountOut * (prices.data?.[coinOut] || 0),
-        amountOut: _.isNaN(amountOut) ? null : amountOut,
-        priceImpactPct: quote.data.priceImact * 100,
-        minimumReceived: amountOut * (1 - slippagePct / 100),
+        valueIn: null,
+        amountIn: null,
+        minimumReceived: null,
+        priceImpactPct: null,
       }
-    }, [quote.data, slippagePct])
+    }
+
+    const amountIn = new BigNumber(quote.data.amount)
+      .shiftedBy(-CURRENCY[coinOut].decimals)
+      .toNumber()
+
+    return {
+      valueIn: _.isNaN(amountIn)
+        ? null
+        : amountIn * (prices.data?.[coinIn] || 0),
+      amountIn: _.isNaN(amountIn) ? null : amountIn,
+      priceImpactPct: quote.data.priceImact * 100,
+      minimumReceived: amountIn * (1 - slippagePct / 100),
+    }
+  }, [quote.data, slippagePct])
 
   useEffect(() => {
     form.setValue("amount", "")
     form.clearErrors()
-  }, [coinIn])
+  }, [coinOut])
+
+  const handleSubmit = async (data: z.infer<typeof schema>) => {
+    await swap.mutateAsync({
+      amountOut: data.amount,
+      coinIn: data.coinIn,
+      coinOut: data.coinOut,
+      minimumReceived: String(minimumReceived),
+    })
+    form.resetField("amount")
+  }
 
   return (
     <Form {...form}>
-      <div className="space-y-2">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
             <div>You will spend</div>
@@ -524,8 +553,8 @@ function SwapCard() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-12">
                     <img
-                      src={CURRENCY[coinIn].icon}
-                      alt={CURRENCY[coinIn].name}
+                      src={CURRENCY[coinOut].icon}
+                      alt={CURRENCY[coinOut].name}
                       className="size-6 shrink-0 rounded-full"
                     />
                     <ChevronDown className="size-4" />
@@ -538,12 +567,12 @@ function SwapCard() {
                       onClick={() => {
                         if (coin === coinOut) {
                           form.setValue(
-                            "coinOut",
+                            "coinIn",
                             CURRENCY_LIST.find(
-                              (c) => c !== coin && c !== coinIn
+                              (c) => c !== coin && c !== coinOut
                             )!
                           )
-                          form.setValue("coinIn", coin)
+                          form.setValue("coinOut", coin)
                         }
                       }}
                       className="w-[200px]"
@@ -566,15 +595,15 @@ function SwapCard() {
             </div>
             <div className="flex items-center justify-between gap-2 text-sm">
               <div className="text-muted-foreground">
-                {valueIn && formatter.usd(valueIn)}
+                {valueOut && formatter.usd(valueOut)}
               </div>
               <div
                 className="flex cursor-pointer items-center justify-end gap-1 [&>svg]:size-3"
                 onClick={() => {
-                  form.setValue("amount", balances.data?.[coinIn] ?? "0")
+                  form.setValue("amount", balances.data?.[coinOut] ?? "0")
                 }}
               >
-                <span>{formatter.number(balances.data?.[coinIn])}</span>
+                <span>{formatter.number(balances.data?.[coinOut])}</span>
                 <EyeClosed />
               </div>
             </div>
@@ -591,7 +620,9 @@ function SwapCard() {
                 <Skeleton className="h-12 w-40" />
               ) : (
                 <Input
-                  value={amountOut ? formatter.number(amountOut) : "-"}
+                  value={
+                    minimumReceived ? formatter.number(minimumReceived) : "-"
+                  }
                   readOnly
                   className="h-12 border-none! bg-transparent! p-0 text-3xl! font-medium focus-visible:ring-0"
                   autoComplete="off"
@@ -604,18 +635,18 @@ function SwapCard() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-12">
                     <img
-                      src={CURRENCY[coinOut].icon}
-                      alt={CURRENCY[coinOut].name}
+                      src={CURRENCY[coinIn].icon}
+                      alt={CURRENCY[coinIn].name}
                       className="size-6 shrink-0 rounded-full"
                     />
                     <ChevronDown className="size-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {CURRENCY_LIST.filter((c) => c !== coinIn).map((coin) => (
+                  {CURRENCY_LIST.filter((c) => c !== coinOut).map((coin) => (
                     <DropdownMenuItem
                       key={coin}
-                      onClick={() => form.setValue("coinOut", coin)}
+                      onClick={() => form.setValue("coinIn", coin)}
                       className="w-[200px]"
                     >
                       <img
@@ -636,7 +667,11 @@ function SwapCard() {
             </div>
             <div className="flex items-center justify-between gap-2 text-sm">
               <div className="text-muted-foreground">
-                {valueOut && formatter.usd(valueOut)}
+                {valueIn && formatter.usd(valueIn)}
+              </div>
+              <div className="flex cursor-pointer items-center justify-end gap-1 [&>svg]:size-3">
+                <span>{formatter.number(balances.data?.[coinIn])}</span>
+                <EyeClosed />
               </div>
             </div>
           </CardContent>
@@ -667,7 +702,9 @@ function SwapCard() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div>Minimum Received</div>
+              <div>Actual Received</div>
+              <div>{formatter.number(amountIn)}</div>
+              <div>Minimum Received After Slippage</div>
               <div>{formatter.number(minimumReceived)}</div>
             </CardContent>
           </Card>
@@ -675,7 +712,11 @@ function SwapCard() {
         <Button
           className="w-full"
           size="lg"
-          disabled={!valueIn || _.size(form.formState.errors) > 0}
+          disabled={
+            !valueIn ||
+            _.size(form.formState.errors) > 0 ||
+            form.formState.isSubmitting
+          }
         >
           {_.chain(form.formState.errors)
             .values()
@@ -683,8 +724,11 @@ function SwapCard() {
             .compact()
             .first()
             .value() || "Swap"}
+          {form.formState.isSubmitting && (
+            <Loader2 className="size-4 animate-spin" />
+          )}
         </Button>
-      </div>
+      </form>
     </Form>
   )
 }

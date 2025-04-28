@@ -42,22 +42,22 @@ export const useQuoteOut = ({
         return null
       }
 
-      const amountOut = new BigNumber(debouncedAmount)
-        .multipliedBy(priceIn)
-        .dividedBy(priceOut)
-      const valueOut = amountOut.multipliedBy(priceOut).toNumber()
+      const amount = new BigNumber(debouncedAmount)
+        .multipliedBy(priceOut)
+        .dividedBy(priceIn)
+      const value = amount.multipliedBy(priceIn).toNumber()
 
       return {
-        amountOut: amountOut.shiftedBy(CURRENCY[coinOut].decimals),
+        amount: amount.shiftedBy(CURRENCY[coinOut].decimals),
         // <100$ => 0.01%, ..., 1000000$ => 10%
         priceImact: Math.min(
           0.1, // 10% max
           Math.max(
             0.0001, // 0.01% min
-            valueOut < 100
+            value < 100
               ? 0.0001 // 0.01% for <$100
-              : valueOut < 1000000
-                ? (Math.log10(valueOut) - 2) / 100 // Logarithmic scaling between $100-$1M
+              : value < 1000000
+                ? (Math.log10(value) - 2) / 100 // Logarithmic scaling between $100-$1M
                 : 0.1 // 10% for >$1M
           )
         ),

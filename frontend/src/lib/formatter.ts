@@ -6,12 +6,14 @@ export const formatter = {
       mantissa: 6,
       thousandSeparated: true,
       optionalMantissa: true,
+      trimMantissa: true,
     }),
   usd: (v?: any) =>
     numbro(v || 0).formatCurrency({
       mantissa: 2,
       thousandSeparated: true,
       optionalMantissa: true,
+      trimMantissa: true,
       currencySymbol: "$",
     }),
   pct: (v?: any) =>
