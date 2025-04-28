@@ -148,7 +148,7 @@ export const useInternalWallet = create<InternalWalletStore>()(
       },
     }),
     {
-      name: `internal-wallet-${contracts.packageId}`,
+      name: `internal-wallet-${contracts.packageId}-${contracts.version}`,
     }
   )
 )
