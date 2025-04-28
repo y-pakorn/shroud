@@ -7,6 +7,7 @@ import { persist } from "zustand/middleware"
 import { contracts } from "@/config/contract"
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 import { getWasm } from "@/lib/utils"
+import { AccountHistory } from "@/types"
 
 interface InternalAccount {
   address: string
@@ -16,6 +17,7 @@ interface InternalAccount {
   lastActiveSeq: number | null
   nullifier: string | null
   balances: Record<keyof typeof CURRENCY, string>
+  history: AccountHistory[]
 }
 
 interface InternalWalletStore {
@@ -35,6 +37,7 @@ interface InternalWalletStore {
   updateTreeIndex: (address: string, treeIndex: number) => void
   updateLastActiveSeq: (address: string, lastActiveSeq: number) => void
   updateNullifier: (address: string, nullifier: string) => void
+  addHistory: (address: string, history: AccountHistory) => void
 }
 
 export const useInternalWallet = create<InternalWalletStore>()(
@@ -53,6 +56,7 @@ export const useInternalWallet = create<InternalWalletStore>()(
               lastActiveSeq: null,
               nullifier: null,
               balances: _.mapValues(CURRENCY, () => "0"),
+              history: [],
             },
           ],
         }))
@@ -143,6 +147,15 @@ export const useInternalWallet = create<InternalWalletStore>()(
         set((state) => ({
           accounts: state.accounts.map((account) =>
             account.address === address ? { ...account, nullifier } : account
+          ),
+        }))
+      },
+      addHistory: (address: string, history: AccountHistory) => {
+        set((state) => ({
+          accounts: state.accounts.map((account) =>
+            account.address === address
+              ? { ...account, history: [history, ...account.history] }
+              : account
           ),
         }))
       },

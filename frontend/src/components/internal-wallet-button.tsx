@@ -23,7 +23,7 @@ export function InternalWalletButton() {
   if (found) {
     return (
       <Button className="pointer-events-none">
-        Active <div className="size-3 rounded-full bg-green-500" />
+        Active <div className="size-3 rounded-full bg-green-400" />
       </Button>
     )
   }

@@ -8,7 +8,7 @@ import { Skeleton } from "./ui/skeleton"
 export function PoolBalanceCard() {
   const poolBalances = usePoolBalances()
   return (
-    <Card className="bg-background/10 w-[180px] gap-0 p-2 text-sm">
+    <Card className="bg-background/10 w-[220px] gap-0 p-2 text-sm">
       <CardHeader className="px-2 font-medium">Pool Balances</CardHeader>
       <CardContent className="space-y-1 px-2">
         {CURRENCY_LIST.map((c) => {

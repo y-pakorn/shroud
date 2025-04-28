@@ -31,6 +31,7 @@ export const useWithdraw = () => {
     updateTreeIndex,
     updateLastActiveSeq,
     updateNullifier,
+    addHistory,
     getInternalAccount,
   } = useInternalWallet()
 
@@ -42,11 +43,13 @@ export const useWithdraw = () => {
       amount: string
       currency: keyof typeof CURRENCY
     }) => {
+      const amountStr = amount.replaceAll(",", "")
+
       if (!currentAccount) {
         throw new Error("No current account")
       }
 
-      const negAmount = new BigNumber(amount).negated().toString()
+      const negAmount = new BigNumber(amountStr).negated().toString()
       const cur = CURRENCY[currency]
       const fullAmount = new BigNumber(negAmount)
         .shiftedBy(cur.decimals)
@@ -96,6 +99,13 @@ export const useWithdraw = () => {
       updateLastActiveSeq(currentAccount.address, Date.now())
       updateNullifier(currentAccount.address, proof.afterNullifier)
       incDecBalance(currentAccount.address, currency, fullAmount, false)
+      addHistory(currentAccount.address, {
+        type: "withdraw",
+        coin: currency,
+        amount,
+        timestamp: Date.now(),
+        digest: txs.digest,
+      })
 
       refreshTokenBalances(queryClient, currentAccount.address)
       refreshPoolBalances(queryClient)

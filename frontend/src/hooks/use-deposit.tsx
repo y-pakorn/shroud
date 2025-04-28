@@ -31,6 +31,7 @@ export const useDeposit = () => {
     updateTreeIndex,
     updateLastActiveSeq,
     updateNullifier,
+    addHistory,
     getInternalAccount,
   } = useInternalWallet()
 
@@ -42,12 +43,14 @@ export const useDeposit = () => {
       amount: string
       currency: keyof typeof CURRENCY
     }) => {
+      const amountStr = amount.replaceAll(",", "")
+
       if (!currentAccount) {
         throw new Error("No current account")
       }
 
       const cur = CURRENCY[currency]
-      const fullAmount = new BigNumber(amount)
+      const fullAmount = new BigNumber(amountStr)
         .shiftedBy(cur.decimals)
         .integerValue(BigNumber.ROUND_FLOOR)
         .toString()
@@ -55,7 +58,7 @@ export const useDeposit = () => {
       const proof = await prove.mutateAsync({
         account: await getInternalAccount(currentAccount.address),
         diffs: {
-          [currency]: amount,
+          [currency]: amountStr,
         },
         isPublic: true,
       })
@@ -111,6 +114,13 @@ export const useDeposit = () => {
       updateLastActiveSeq(currentAccount.address, Date.now())
       updateNullifier(currentAccount.address, proof.afterNullifier)
       incDecBalance(currentAccount.address, currency, fullAmount, false)
+      addHistory(currentAccount.address, {
+        type: "deposit",
+        coin: currency,
+        amount,
+        timestamp: Date.now(),
+        digest: txs.digest,
+      })
 
       refreshTokenBalances(queryClient, currentAccount.address)
       refreshPoolBalances(queryClient)

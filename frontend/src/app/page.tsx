@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NavBar } from "@/components/nav-bar"
 import { PoolBalanceCard } from "@/components/pool-balance-card"
+import { WalletCard } from "@/components/wallet-card"
 
 export default function Home() {
   return (
@@ -46,6 +47,9 @@ export default function Home() {
       <div className="relative">
         <div className="absolute top-0">
           <PoolBalanceCard />
+        </div>
+        <div className="absolute top-0 right-0">
+          <WalletCard />
         </div>
         <div className="absolute top-0 left-1/2 w-[500px] -translate-x-1/2">
           <Tabs defaultValue="swap">

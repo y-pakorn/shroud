@@ -23,6 +23,7 @@ export const useSwap = () => {
     updateTreeIndex,
     updateLastActiveSeq,
     updateNullifier,
+    addHistory,
     getInternalAccount,
   } = useInternalWallet()
 
@@ -39,15 +40,18 @@ export const useSwap = () => {
       coinOut: keyof typeof CURRENCY
       amountOut: string
     }) => {
+      const amountOutStr = amountOut.replaceAll(",", "")
+      const minimumReceivedStr = minimumReceived.replaceAll(",", "")
+
       if (!currentAccount) {
         throw new Error("No current account")
       }
 
-      const fullAmountIn = new BigNumber(minimumReceived)
+      const fullAmountIn = new BigNumber(minimumReceivedStr)
         .shiftedBy(CURRENCY[coinIn].decimals)
         .integerValue(BigNumber.ROUND_FLOOR)
         .toString()
-      const negAmountOut = new BigNumber(amountOut).negated().toString()
+      const negAmountOut = new BigNumber(amountOutStr).negated().toString()
       const fullAmountOut = new BigNumber(negAmountOut)
         .shiftedBy(CURRENCY[coinOut].decimals)
         .integerValue(BigNumber.ROUND_FLOOR)
@@ -97,6 +101,15 @@ export const useSwap = () => {
       updateNullifier(currentAccount.address, proof.afterNullifier)
       incDecBalance(currentAccount.address, coinOut, fullAmountOut, false)
       incDecBalance(currentAccount.address, coinIn, fullAmountIn, false)
+      addHistory(currentAccount.address, {
+        type: "swap",
+        from: coinOut,
+        to: coinIn,
+        out: amountOut,
+        in: minimumReceived,
+        timestamp: Date.now(),
+        digest: digest,
+      })
 
       refreshPoolBalances(queryClient)
 

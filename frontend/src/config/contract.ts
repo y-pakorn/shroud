@@ -1,5 +1,5 @@
 export const contracts = {
-  version: "1.0.0",
+  version: "1.0.2",
   // Publish tx hash: FGReQ6JRYnZLLFx7a42dVmBQmbT8wyiWBPjpwJP4UFA3
   // Package ID: 0x69d04a372a7d526df8f0ec19ab8e2c1e045d08820815d6f22873372609945afb
   // Shroud ID: 0x480e522d8d60e97b26c40dc8731e44b15a40b2193a953a38e49406448d0f4b78
