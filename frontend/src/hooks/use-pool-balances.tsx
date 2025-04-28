@@ -1,5 +1,5 @@
 import { useSuiClient } from "@mysten/dapp-kit"
-import { useQuery, UseQueryOptions } from "@tanstack/react-query"
+import { QueryClient, useQuery, UseQueryOptions } from "@tanstack/react-query"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 
@@ -8,12 +8,20 @@ import { CURRENCY } from "@/config/currency"
 
 export type PoolBalance = Record<keyof typeof CURRENCY, string>
 
+export const refreshPoolBalances = (client: QueryClient) => {
+  client.invalidateQueries({
+    exact: true,
+    queryKey: ["pool-balances"],
+  })
+}
+
 export const usePoolBalances = ({
   ...options
 }: {} & Partial<UseQueryOptions<PoolBalance>> = {}) => {
   const client = useSuiClient()
-  return useQuery({
-    queryKey: ["pool-balances"],
+
+  const poolBalanceIds = useQuery({
+    queryKey: ["pool-balance-ids"],
     queryFn: async () => {
       const object = await client.getObject({
         id: contracts.coreId,
@@ -28,8 +36,18 @@ export const usePoolBalances = ({
       const balanceFields = await client.getDynamicFields({
         parentId: balanceBagId,
       })
+
+      return balanceFields.data.map((d) => d.objectId)
+    },
+  })
+
+  return useQuery({
+    queryKey: ["pool-balances"],
+    enabled: !!poolBalanceIds.data,
+    refetchInterval: 60 * 1000, // 1 minute
+    queryFn: async () => {
       const rawBalances = await client.multiGetObjects({
-        ids: balanceFields.data.map((d) => d.objectId),
+        ids: poolBalanceIds.data!,
         options: {
           showContent: true,
         },

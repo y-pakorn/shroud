@@ -1,8 +1,4 @@
-import {
-  useCurrentAccount,
-  useSignAndExecuteTransaction,
-  useSuiClient,
-} from "@mysten/dapp-kit"
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import BigNumber from "bignumber.js"
 import { ExternalLink } from "lucide-react"
@@ -13,13 +9,13 @@ import { CURRENCY } from "@/config/currency"
 import { network } from "@/components/provider"
 
 import { useInternalWallet } from "./use-internal-wallet"
+import { refreshPoolBalances } from "./use-pool-balances"
 import { useProve } from "./use-prove"
 
 export const useSwap = () => {
   const client = useSuiClient()
-  const currentAccount = useCurrentAccount()
-  const sae = useSignAndExecuteTransaction()
   const queryClient = useQueryClient()
+  const currentAccount = useCurrentAccount()
 
   const prove = useProve()
   const {
@@ -101,6 +97,8 @@ export const useSwap = () => {
       updateNullifier(currentAccount.address, proof.afterNullifier)
       incDecBalance(currentAccount.address, coinOut, fullAmountOut, false)
       incDecBalance(currentAccount.address, coinIn, fullAmountIn, false)
+
+      refreshPoolBalances(queryClient)
 
       toast.success("Swap successful", {
         description: `Tx: ${digest}`,

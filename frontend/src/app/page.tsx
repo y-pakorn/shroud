@@ -10,10 +10,9 @@ import { z } from "zod"
 
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 import { formatter } from "@/lib/formatter"
+import { useActiveProtocolAccount } from "@/hooks/use-active-protocol-account"
 import { useDeposit } from "@/hooks/use-deposit"
-import { usePoolBalances } from "@/hooks/use-pool-balances"
 import { useProtocolBalances } from "@/hooks/use-protocol-balances"
-import { useProve } from "@/hooks/use-prove"
 import { useQuoteOut } from "@/hooks/use-quote-out"
 import { useSwap } from "@/hooks/use-swap"
 import { useTokenBalances } from "@/hooks/use-token-balances"
@@ -37,36 +36,43 @@ import { Form } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NavBar } from "@/components/nav-bar"
+import { PoolBalanceCard } from "@/components/pool-balance-card"
 
 export default function Home() {
   return (
-    <main className="relative container py-8">
+    <main className="relative container space-y-4 py-8">
       <div className="fixed inset-0 z-[-1] h-screen w-screen scale-110 bg-[url('/bg.webp')] bg-cover bg-center opacity-35 blur-md" />
       <NavBar />
-      <div className="absolute top-0 left-1/2 w-[500px] -translate-x-1/2 py-8">
-        <Tabs defaultValue="swap">
-          <TabsList>
-            <TabsTrigger value="swap">Swap</TabsTrigger>
-            <TabsTrigger value="deposit">Deposit</TabsTrigger>
-            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-            <TabsContent value="swap"></TabsContent>
-          </TabsList>
-          <TabsContent value="swap">
-            <SwapCard />
-          </TabsContent>
-          <TabsContent value="deposit">
-            <DepositCard />
-          </TabsContent>
-          <TabsContent value="withdraw">
-            <WithdrawCard />
-          </TabsContent>
-        </Tabs>
+      <div className="relative">
+        <div className="absolute top-0">
+          <PoolBalanceCard />
+        </div>
+        <div className="absolute top-0 left-1/2 w-[500px] -translate-x-1/2">
+          <Tabs defaultValue="swap">
+            <TabsList>
+              <TabsTrigger value="swap">Swap</TabsTrigger>
+              <TabsTrigger value="deposit">Deposit</TabsTrigger>
+              <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+              <TabsContent value="swap"></TabsContent>
+            </TabsList>
+            <TabsContent value="swap">
+              <SwapCard />
+            </TabsContent>
+            <TabsContent value="deposit">
+              <DepositCard />
+            </TabsContent>
+            <TabsContent value="withdraw">
+              <WithdrawCard />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </main>
   )
 }
 
 function DepositCard() {
+  const protocolAccount = useActiveProtocolAccount()
   const deposit = useDeposit()
   const balances = useTokenBalances()
   const prices = useTokenPrices()
@@ -218,17 +224,20 @@ function DepositCard() {
           className="w-full"
           size="lg"
           disabled={
+            !protocolAccount ||
             !value ||
             _.size(form.formState.errors) > 0 ||
             form.formState.isSubmitting
           }
         >
-          {_.chain(form.formState.errors)
-            .values()
-            .map((error) => error?.message)
-            .compact()
-            .first()
-            .value() || "Deposit"}
+          {!protocolAccount
+            ? "Account not activated"
+            : _.chain(form.formState.errors)
+                .values()
+                .map((error) => error?.message)
+                .compact()
+                .first()
+                .value() || "Deposit"}
           {form.formState.isSubmitting && <Loader2 className="animate-spin" />}
         </Button>
       </form>
@@ -237,6 +246,7 @@ function DepositCard() {
 }
 
 function WithdrawCard() {
+  const protocolAccount = useActiveProtocolAccount()
   const withdraw = useWithdraw()
   const balances = useProtocolBalances()
   const prices = useTokenPrices()
@@ -380,17 +390,20 @@ function WithdrawCard() {
           className="w-full"
           size="lg"
           disabled={
+            !protocolAccount ||
             !value ||
             _.size(form.formState.errors) > 0 ||
             form.formState.isSubmitting
           }
         >
-          {_.chain(form.formState.errors)
-            .values()
-            .map((error) => error?.message)
-            .compact()
-            .first()
-            .value() || "Withdraw"}
+          {!protocolAccount
+            ? "Account not activated"
+            : _.chain(form.formState.errors)
+                .values()
+                .map((error) => error?.message)
+                .compact()
+                .first()
+                .value() || "Withdraw"}
           {form.formState.isSubmitting && <Loader2 className="animate-spin" />}
         </Button>
       </form>
@@ -399,6 +412,7 @@ function WithdrawCard() {
 }
 
 function SwapCard() {
+  const protocolAccount = useActiveProtocolAccount()
   const swap = useSwap()
   const balances = useProtocolBalances()
   const prices = useTokenPrices()
@@ -713,17 +727,20 @@ function SwapCard() {
           className="w-full"
           size="lg"
           disabled={
+            !protocolAccount ||
             !valueIn ||
             _.size(form.formState.errors) > 0 ||
             form.formState.isSubmitting
           }
         >
-          {_.chain(form.formState.errors)
-            .values()
-            .map((error) => error?.message)
-            .compact()
-            .first()
-            .value() || "Swap"}
+          {!protocolAccount
+            ? "Account not activated"
+            : _.chain(form.formState.errors)
+                .values()
+                .map((error) => error?.message)
+                .compact()
+                .first()
+                .value() || "Swap"}
           {form.formState.isSubmitting && (
             <Loader2 className="size-4 animate-spin" />
           )}

@@ -15,6 +15,7 @@ import { CURRENCY } from "@/config/currency"
 import { network } from "@/components/provider"
 
 import { useInternalWallet } from "./use-internal-wallet"
+import { refreshPoolBalances } from "./use-pool-balances"
 import { useProve } from "./use-prove"
 import { refreshTokenBalances } from "./use-token-balances"
 
@@ -97,6 +98,7 @@ export const useWithdraw = () => {
       incDecBalance(currentAccount.address, currency, fullAmount, false)
 
       refreshTokenBalances(queryClient, currentAccount.address)
+      refreshPoolBalances(queryClient)
 
       toast.success("Withdraw successful", {
         description: `Tx: ${txs.digest}`,

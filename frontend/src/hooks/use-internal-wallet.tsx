@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import { Hex, pad } from "viem"
 import { create } from "zustand"
-import { createJSONStorage, persist } from "zustand/middleware"
+import { persist } from "zustand/middleware"
 
 import { contracts } from "@/config/contract"
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
@@ -70,7 +70,6 @@ export const useInternalWallet = create<InternalWalletStore>()(
           account.nonce.replace(/^0x/, "")
         )
         CURRENCY_LIST.forEach((c, i) => {
-          const cur = CURRENCY[c]
           acc.setBalance(BigInt(i), BigInt(account.balances[c]))
         })
         if (account.treeIndex !== null) {
