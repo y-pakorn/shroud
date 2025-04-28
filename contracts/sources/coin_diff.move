@@ -19,21 +19,13 @@ public fun empty(total: u64, allowed_tokens: vector<TypeName>): CoinDiff {
 }
 
 public fun add_coin(coin_diff: &mut CoinDiff, coin_type: TypeName, amount: u64) {
-    if (coin_diff.map.contains(&coin_type)) {
-        let current_amount = coin_diff.map.get_mut(&coin_type);
-        *current_amount = (*current_amount).add(fr::from_u64(amount));
-    } else {
-        coin_diff.map.insert(coin_type, fr::from_u64(amount));
-    }
+    let current_amount = coin_diff.map.get_mut(&coin_type);
+    *current_amount = (*current_amount).add(fr::from_u64(amount));
 }
 
 public fun sub_coin(coin_diff: &mut CoinDiff, coin_type: TypeName, amount: u64) {
-    if (coin_diff.map.contains(&coin_type)) {
-        let current_amount = coin_diff.map.get_mut(&coin_type);
-        *current_amount = (*current_amount).sub(fr::from_u64(amount));
-    } else {
-        coin_diff.map.insert(coin_type, fr::from_u64(amount).negate());
-    }
+    let current_amount = coin_diff.map.get_mut(&coin_type);
+    *current_amount = (*current_amount).sub(fr::from_u64(amount));
 }
 
 public fun final_repr(coin_diff: &CoinDiff): u256 {
@@ -42,10 +34,10 @@ public fun final_repr(coin_diff: &CoinDiff): u256 {
         values.push_back(fr::zero());
     };
     // coin_diff_hash = H(H(0, coin_diff[0]), coin_diff[1]), ...
-    values.map!(|v| v.repr()).fold!(0, |acc, v| {
+    values.fold!(0, |acc, v| {
         let mut to_hash = vector::empty();
         to_hash.push_back(acc);
-        to_hash.push_back(v);
+        to_hash.push_back(v.repr());
         poseidon_bn254(&to_hash)
     })
 }

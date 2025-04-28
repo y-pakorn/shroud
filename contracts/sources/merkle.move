@@ -35,15 +35,18 @@ public fun new(level: u64, valid_size: u64, default_leaf: u256, ctx: &mut TxCont
         hashes.push_back(hashed);
         i = i + 1;
     };
+    let mut valid_roots = vector::empty();
+    let root = hashes[hashes.length() - 1];
+    valid_roots.push_back(root);
     MerkleTree {
         id: object::new(ctx),
         hashes: hashes,
         zeros: hashes,
         leafs: table::new(ctx),
         level: level,
-        root: hashes[hashes.length() - 1],
+        root: root,
         valid_size: valid_size,
-        valid_roots: vector::empty(),
+        valid_roots: valid_roots,
     }
 }
 
