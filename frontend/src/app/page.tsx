@@ -155,7 +155,7 @@ function DepositCard() {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
-            <div>You will deposit</div>
+            <div>You will publicly deposit</div>
             <div className="flex items-center justify-between gap-2">
               <Input
                 {...form.register("amount")}
@@ -329,7 +329,7 @@ function WithdrawCard() {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
-            <div>You will withdraw</div>
+            <div>You will publicly withdraw</div>
             <div className="flex items-center justify-between gap-2">
               <Input
                 {...form.register("amount")}
@@ -556,7 +556,7 @@ function SwapCard() {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
-            <div>You will spend</div>
+            <div>You will privately spend</div>
             <div className="flex items-center justify-between gap-2">
               <Input
                 {...form.register("amount")}
@@ -630,7 +630,7 @@ function SwapCard() {
         <Card className="bg-background/10">
           <CardContent className="space-y-1">
             <div className="flex items-center gap-2">
-              <div>You will receive</div>
+              <div>You will privately receive</div>
               {quote.isFetching && <Loader2 className="size-4 animate-spin" />}
             </div>
             <div className="flex items-center justify-between gap-2">
