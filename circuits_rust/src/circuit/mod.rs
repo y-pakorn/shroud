@@ -14,6 +14,7 @@ use crate::{
     poseidon::{PoseidonHash, PoseidonHashVar},
 };
 
+#[derive(Debug, Clone)]
 pub struct MainCircuit<const L: usize, const N: usize> {
     pub nonce: Fr,
     pub before: [Fr; N],
@@ -52,30 +53,25 @@ impl<const L: usize, const N: usize> MainCircuit<L, N> {
 
 impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L, N> {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fr>) -> r1cs::Result<()> {
-        let zero_balance_hash = FpVar::<Fr>::new_constant(
-            ns!(cs, "zero_balance"),
-            &[Fr::ZERO; N]
-                .iter()
-                .fold(self.nonce, |acc, v| self.hasher.hash(&acc, v)),
-        )?;
+        let merkle_root_var = FpVar::new_input(ns!(cs, "merkle_root"), || Ok(self.merkle_root))?;
+        let diff_hash_var = FpVar::new_input(ns!(cs, "diff_hash"), || Ok(self.diff_hash))?;
+        let nullifier_var = FpVar::new_input(ns!(cs, "nullifier"), || Ok(self.nullifier))?;
+        let after_leaf_var = FpVar::new_input(ns!(cs, "after_leaf"), || Ok(self.after_leaf))?;
+        let public_address_var =
+            FpVar::new_input(ns!(cs, "public_address"), || Ok(self.public_address))?;
+        let _aux_var = FpVar::new_input(ns!(cs, "aux"), || Ok(self.aux))?;
+
+        let zero_var = FpVar::<Fr>::constant(Fr::ZERO);
+        let poseidon_hash_var =
+            PoseidonHashVar::new_constant(ns!(cs, "poseidon_parameter"), self.hasher)?;
+
+        let merkle_path_var =
+            PathVar::new_witness(ns!(cs, "merkle_path"), || Ok(self.merkle_path))?;
         let nonce_var = FpVar::new_witness(ns!(cs, "nonce"), || Ok(self.nonce))?;
         let before_var = Vec::<FpVar<Fr>>::new_witness(ns!(cs, "before"), || Ok(self.before))?;
         let diff_var = Vec::<FpVar<Fr>>::new_witness(ns!(cs, "diff"), || Ok(self.diff))?;
         let after_var = Vec::<FpVar<Fr>>::new_witness(ns!(cs, "after"), || Ok(self.after))?;
-        let merkle_root_var = FpVar::new_input(ns!(cs, "merkle_root"), || Ok(self.merkle_root))?;
-        let merkle_path_var =
-            PathVar::new_witness(ns!(cs, "merkle_path"), || Ok(self.merkle_path))?;
-        let diff_hash_var = FpVar::new_input(ns!(cs, "diff_hash"), || Ok(self.diff_hash))?;
-        let nullifier_var = FpVar::new_input(ns!(cs, "nullifier"), || Ok(self.nullifier))?;
-        let after_leaf_var = FpVar::new_input(ns!(cs, "after_leaf"), || Ok(self.after_leaf))?;
         let address_var = FpVar::new_witness(ns!(cs, "address"), || Ok(self.address))?;
-        let public_address_var =
-            FpVar::new_input(ns!(cs, "public_address"), || Ok(self.public_address))?;
-        let _aux_var = FpVar::new_input(ns!(cs, "aux"), || Ok(self.aux))?;
-        let zero_var = FpVar::<Fr>::constant(Fr::ZERO);
-
-        let poseidon_hash_var =
-            PoseidonHashVar::new_constant(ns!(cs, "poseidon_parameter"), self.hasher)?;
 
         // check for balance updates
         for i in 0..N {
@@ -87,6 +83,11 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
 
         // P = H(address, nonce)
         let prehash = poseidon_hash_var.hash(&address_var, &nonce_var)?;
+
+        // empty_leaf = H(H(P, 0), 0), ....
+        let empty_leaf = (0..N).try_fold(prehash.clone(), |acc, _| {
+            poseidon_hash_var.hash(&acc, &zero_var)
+        })?;
 
         // before_leaf = H(H(P, before[0]), before[1]), ....
         let before_leaf = before_var
@@ -119,9 +120,9 @@ impl<const L: usize, const N: usize> ConstraintSynthesizer<Fr> for MainCircuit<L
 
         let nullifier = poseidon_hash_var.hash(&before_leaf, &nonce_var)?;
 
-        // if before_leaf == zero_balance_hash && nullifier == 0
+        // if before_leaf == empty_leaf && nullifier == 0
         // -> check for valid nullifier and valid membership proof
-        ((before_leaf.is_eq(&zero_balance_hash)? & nullifier.is_eq(&zero_var)?)
+        ((before_leaf.is_eq(&empty_leaf)? & nullifier_var.is_eq(&zero_var)?)
             | (nullifier.is_eq(&nullifier_var)? & is_before_membership_valid))
             .enforce_equal(&Boolean::TRUE)?;
 

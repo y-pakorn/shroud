@@ -2,6 +2,7 @@ use ark_bn254::{Bn254, Fr};
 use ark_crypto_primitives::snark::SNARK;
 use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
 use ark_groth16::{Groth16, ProvingKey};
+use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::thread_rng;
 use serde_json::json;
@@ -9,7 +10,7 @@ use serde_wasm_bindgen::to_value;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
-    merkle_tree::{Path, SparseMerkleTree},
+    merkle_tree::SparseMerkleTree,
     poseidon::{poseidon_bn254, PoseidonHash},
     Circuit, ASSET_SIZE, LEVEL,
 };
@@ -20,11 +21,22 @@ pub fn init() {
 }
 
 #[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+macro_rules! console_log {
+    // Note that this is using the `log` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Clone, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Account {
     balance: [u64; ASSET_SIZE],
     nonce: Fr,
-    address: String,
     address_fr: Fr,
     latest_seq_sync: u64,
     index: Option<usize>,
@@ -33,14 +45,15 @@ pub struct Account {
 #[wasm_bindgen]
 impl Account {
     #[wasm_bindgen(js_name = new)]
-    pub fn wasm_new(address: String, nonce_bytes: String) -> Self {
+    pub fn wasm_new(address_hex: String, nonce_bytes: String) -> Self {
         Self {
             balance: [0; ASSET_SIZE],
-            nonce: Fr::from_le_bytes_mod_order(
+            nonce: Fr::from_be_bytes_mod_order(
                 &hex::decode(&nonce_bytes).expect("Invalid nonce hex string"),
             ),
-            address_fr: Fr::from_le_bytes_mod_order(address.as_bytes()),
-            address,
+            address_fr: Fr::from_be_bytes_mod_order(
+                &hex::decode(&address_hex).expect("Invalid address hex string"),
+            ),
             latest_seq_sync: 0,
             index: None,
         }
@@ -107,7 +120,7 @@ impl State {
         self.merkle_leafs = leafs
             .iter()
             .map(|s| hex::decode(s).expect("Invalid hex string"))
-            .map(|b| Fr::from_le_bytes_mod_order(&b))
+            .map(|b| Fr::from_be_bytes_mod_order(&b))
             .collect();
     }
 
@@ -117,7 +130,7 @@ impl State {
             leafs
                 .iter()
                 .map(|s| hex::decode(s).expect("Invalid hex string"))
-                .map(|b| Fr::from_le_bytes_mod_order(&b)),
+                .map(|b| Fr::from_be_bytes_mod_order(&b)),
         );
     }
 
@@ -147,7 +160,7 @@ pub fn prove(
     let pk = ProvingKey::<Bn254>::deserialize_uncompressed_unchecked(&pk_bytes[..])
         .expect("Failed to deserialize pk");
     let aux_fr = aux
-        .map(|a| Fr::from_le_bytes_mod_order(&hex::decode(&a).expect("Invalid aux hex string")))
+        .map(|a| Fr::from_be_bytes_mod_order(&hex::decode(&a).expect("Invalid aux hex string")))
         .unwrap_or(Fr::ZERO);
     let hasher = PoseidonHash::new(poseidon_bn254());
     let before = state.account.balance.map(|b| Fr::from(b));
@@ -174,19 +187,41 @@ pub fn prove(
         .account
         .index
         .map(|i| merkle_tree.generate_membership_proof(i as u64))
-        .unwrap_or(Path::empty());
+        .unwrap_or(merkle_tree.generate_membership_proof(0));
 
     let diff_hash = diff.iter().fold(Fr::ZERO, |acc, d| hasher.hash(&acc, &d));
 
-    let before_leaf = before
-        .iter()
-        .fold(state.account.nonce, |acc, b| hasher.hash(&acc, &b));
+    let prehash = hasher.hash(&state.account.address_fr, &state.account.nonce);
+    let before_leaf = before.iter().fold(prehash, |acc, b| hasher.hash(&acc, &b));
+    let after_leaf = after.iter().fold(prehash, |acc, b| hasher.hash(&acc, &b));
 
-    let after_leaf = after
-        .iter()
-        .fold(state.account.nonce, |acc, b| hasher.hash(&acc, &b));
+    let nullifier = match state.account.index {
+        Some(_) => hasher.hash(&before_leaf, &state.account.nonce),
+        None => Fr::ZERO,
+    };
+    let after_nullifier = hasher.hash(&after_leaf, &state.account.nonce);
 
-    let nullifier = hasher.hash(&before_leaf, &state.account.nonce);
+    console_log!("Address: {}", state.account.address_fr);
+    console_log!("Nonce: {}", state.account.nonce);
+    console_log!(
+        "Public address: {}",
+        if is_public {
+            state.account.address_fr
+        } else {
+            Fr::ZERO
+        }
+    );
+    console_log!("Before: {:?}", before);
+    console_log!("Diff: {:?}", diff);
+    console_log!("After: {:?}", after);
+    console_log!("Nullifier: {}", nullifier);
+    console_log!("After nullifier: {}", after_nullifier);
+    console_log!("Diff hash: {}", diff_hash);
+    console_log!("Merkle root: {}", merkle_root);
+    console_log!("Merkle path: {:?}", merkle_path);
+    console_log!("Before leaf: {}", before_leaf);
+    console_log!("After leaf: {}", after_leaf);
+    console_log!("Aux: {}", aux_fr);
 
     let circuit = Circuit {
         nonce: state.account.nonce,
@@ -208,6 +243,15 @@ pub fn prove(
         aux: aux_fr,
     };
 
+    let cs = ConstraintSystem::<Fr>::new_ref();
+    circuit
+        .clone()
+        .generate_constraints(cs.clone())
+        .expect("Failed to generate constraints");
+    if !cs.is_satisfied().expect("Failed to check constraints") {
+        panic!("Constraints are not satisfied");
+    }
+
     let proof =
         Groth16::<Bn254>::prove(&pk, circuit, &mut thread_rng()).expect("Proof generation failed");
 
@@ -216,12 +260,39 @@ pub fn prove(
         .serialize_compressed(&mut proof_bytes)
         .expect("Failed to serialize proof");
 
+    let mut public_inputs_serialized = Vec::new();
+    merkle_root
+        .serialize_compressed(&mut public_inputs_serialized)
+        .expect("Failed to serialize merkle root");
+    diff_hash
+        .serialize_compressed(&mut public_inputs_serialized)
+        .expect("Failed to serialize diff hash");
+    nullifier
+        .serialize_compressed(&mut public_inputs_serialized)
+        .expect("Failed to serialize nullifier");
+    after_leaf
+        .serialize_compressed(&mut public_inputs_serialized)
+        .expect("Failed to serialize after leaf");
+    (if is_public {
+        state.account.address_fr
+    } else {
+        Fr::ZERO
+    })
+    .serialize_compressed(&mut public_inputs_serialized)
+    .expect("Failed to serialize public address");
+    aux_fr
+        .serialize_compressed(&mut public_inputs_serialized)
+        .expect("Failed to serialize aux");
+
     to_value(&json!({
         "proof": hex::encode(proof_bytes),
-        "nullifier": hex::encode(nullifier.into_bigint().to_bytes_le()),
-        "after_leaf": hex::encode(after_leaf.into_bigint().to_bytes_le()),
-        "diff_hash": hex::encode(diff_hash.into_bigint().to_bytes_le()),
-        "merkle_root": hex::encode(merkle_root.into_bigint().to_bytes_le()),
+        "address": hex::encode(state.account.address_fr.into_bigint().to_bytes_be()),
+        "nullifier": hex::encode(nullifier.into_bigint().to_bytes_be()),
+        "after_leaf": hex::encode(after_leaf.into_bigint().to_bytes_be()),
+        "after_nullifier": hex::encode(after_nullifier.into_bigint().to_bytes_be()),
+        "diff_hash": hex::encode(diff_hash.into_bigint().to_bytes_be()),
+        "merkle_root": hex::encode(merkle_root.into_bigint().to_bytes_be()),
+        "public_inputs": hex::encode(public_inputs_serialized),
     }))
     .expect("Failed to serialize proof")
 }

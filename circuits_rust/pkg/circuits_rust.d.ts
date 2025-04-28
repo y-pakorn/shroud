@@ -5,7 +5,7 @@ export function prove(state: State, pk_bytes: Uint8Array, diffs: BigInt64Array, 
 export class Account {
   private constructor();
   free(): void;
-  static new(address: string, nonce_bytes: string): Account;
+  static new(address_hex: string, nonce_bytes: string): Account;
   getBalance(asset_id: bigint): bigint;
   getBalances(): BigUint64Array;
   setBalance(asset_id: bigint, balance: bigint): void;

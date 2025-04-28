@@ -285,12 +285,12 @@ export class Account {
         wasm.__wbg_account_free(ptr, 0);
     }
     /**
-     * @param {string} address
+     * @param {string} address_hex
      * @param {string} nonce_bytes
      * @returns {Account}
      */
-    static new(address, nonce_bytes) {
-        const ptr0 = passStringToWasm0(address, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    static new(address_hex, nonce_bytes) {
+        const ptr0 = passStringToWasm0(address_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(nonce_bytes, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
@@ -459,6 +459,10 @@ export function __wbg_error_7534b8e9a36f1ab4(arg0, arg1) {
 export function __wbg_getRandomValues_bcb4912f16000dc4() { return handleError(function (arg0, arg1) {
     arg0.getRandomValues(arg1);
 }, arguments) };
+
+export function __wbg_log_0bea64b862f8790b(arg0, arg1) {
+    console.log(getStringFromWasm0(arg0, arg1));
+};
 
 export function __wbg_msCrypto_0a36e2ec3a343d26(arg0) {
     const ret = arg0.msCrypto;
