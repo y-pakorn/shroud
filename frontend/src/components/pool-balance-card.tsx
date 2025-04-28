@@ -19,7 +19,7 @@ export function PoolBalanceCard() {
               <img className="size-4 shrink-0 rounded-full" src={cur.icon} />
               <p>{cur.ticker}</p>
               <div className="flex-1" />
-              {poolBalances.isLoading ? (
+              {poolBalances.isPending ? (
                 <Skeleton className="h-4 w-12" />
               ) : (
                 <p className="text-muted-foreground truncate">
