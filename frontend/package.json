@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
-    "@mysten/dapp-kit": "^0.15.4",
-    "@mysten/sui": "^1.27.1",
+    "@mysten/dapp-kit": "^0.16.1",
+    "@mysten/sui": "^1.29.0",
     "@mysten/wallet-standard": "^0.14.4",
     "@next/third-parties": "^15.2.4",
     "@pythnetwork/hermes-client": "^2.0.0",

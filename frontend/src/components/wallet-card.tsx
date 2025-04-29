@@ -71,7 +71,7 @@ export function WalletCard() {
                 </CollapsibleTrigger>
               </div>
               <CollapsibleContent>
-                <ScrollArea className="h-[300px]">
+                <ScrollArea className="max-h-[300px]">
                   <div className="h-full space-y-2 overflow-y-auto">
                     {account.history.map((h, i) => (
                       <div key={i} className="-space-y-0.5">

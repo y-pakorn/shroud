@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography"
-import { getFaucetHost, requestSuiFromFaucetV0 } from "@mysten/sui/faucet"
+import { getFaucetHost, requestSuiFromFaucetV2 } from "@mysten/sui/faucet"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { fromHex, Hex } from "viem"
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const signer = Ed25519Keypair.fromSecretKey(keypair.secretKey)
 
   try {
-    await requestSuiFromFaucetV0({
+    await requestSuiFromFaucetV2({
       host: getFaucetHost("devnet"),
       recipient: signer.toSuiAddress(),
     })

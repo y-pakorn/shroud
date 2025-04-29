@@ -7,23 +7,10 @@ import {
   useAccounts,
   useCurrentAccount,
   useDisconnectWallet,
-  useSuiClient,
-  useSuiClientContext,
   useSwitchAccount,
 } from "@mysten/dapp-kit"
-import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet"
-import { Transaction } from "@mysten/sui/transactions"
 import type { WalletAccount } from "@mysten/wallet-standard"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import {
-  ChevronDown,
-  Copy,
-  Droplets,
-  ExternalLink,
-  Loader2,
-  LogOut,
-  PieChart,
-} from "lucide-react"
+import { ChevronDown, Copy, ExternalLink, Loader2, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 import { cn, formatAddress } from "@/lib/utils"

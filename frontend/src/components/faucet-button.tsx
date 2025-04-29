@@ -1,9 +1,8 @@
 import {
   useCurrentAccount,
   useSignAndExecuteTransaction,
-  useSuiClient,
 } from "@mysten/dapp-kit"
-import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet"
+import { requestSuiFromFaucetV2 } from "@mysten/sui/faucet"
 import { Transaction } from "@mysten/sui/transactions"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import BigNumber from "bignumber.js"
@@ -29,7 +28,7 @@ export function FaucetButton() {
       if (!account?.address) {
         throw new Error("No account found")
       }
-      await requestSuiFromFaucetV0({
+      await requestSuiFromFaucetV2({
         host: network.faucetUrl,
         recipient: account.address,
       })

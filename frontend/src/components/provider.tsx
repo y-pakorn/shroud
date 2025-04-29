@@ -29,7 +29,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
       <SuiClientProvider networks={networks} network="devnet">
         <WalletProvider
           autoConnect
-          stashedWallet={{
+          slushWallet={{
             name: "Shroud",
           }}
         >
