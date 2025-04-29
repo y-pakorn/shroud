@@ -11,6 +11,7 @@ import { network } from "@/components/provider"
 import { useInternalWallet } from "./use-internal-wallet"
 import { refreshPoolBalances } from "./use-pool-balances"
 import { useProve } from "./use-prove"
+import { txState } from "./use-tx-state"
 
 export const useSwap = () => {
   const client = useSuiClient()
@@ -57,6 +58,14 @@ export const useSwap = () => {
         .integerValue(BigNumber.ROUND_FLOOR)
         .toString()
 
+      txState().startOperation({
+        type: "swap",
+        from: coinOut,
+        to: coinIn,
+        out: amountOut,
+        in: minimumReceived,
+      })
+
       const proof = await prove.mutateAsync({
         account: await getInternalAccount(currentAccount.address),
         diffs: {
@@ -82,7 +91,7 @@ export const useSwap = () => {
 
       const { digest } = await tx.json()
 
-      console.log(digest)
+      txState().setTxHash(digest)
 
       const result = await client.waitForTransaction({
         digest: digest,
@@ -91,6 +100,9 @@ export const useSwap = () => {
           showEvents: true,
         },
       })
+
+      txState().setTxResult(result)
+
       const leafInserted = result.events!.find(
         (t) => t.type === `${contracts.packageId}::core::LeafInserted`
       )?.parsedJson as any
@@ -121,6 +133,12 @@ export const useSwap = () => {
             window.open(`${network.explorerUrl}/tx/${digest}`, "_blank")
           },
         },
+      })
+    },
+    onError: (error) => {
+      txState().clear()
+      toast.error("Swap failed", {
+        description: error.message,
       })
     },
   })

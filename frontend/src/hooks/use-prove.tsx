@@ -7,6 +7,7 @@ import { fromHex, Hex, toHex } from "viem"
 import { contracts } from "@/config/contract"
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
 
+import { txState, useTxState } from "./use-tx-state"
 import { useWorker } from "./use-worker"
 
 export const useProve = () => {
@@ -56,10 +57,10 @@ export const useProve = () => {
       diffs: Partial<Record<keyof typeof CURRENCY, string>>
       isPublic: boolean
     }) => {
-      console.log("Start proving...")
       const leafs = await getAllLeafs()
-      console.log(leafs)
+      txState().setMerkleTreeSize(leafs.length)
       const pk = await fetch("/api/pk").then((r) => r.json())
+      txState().setProvingKeySize(pk.length / 2 - 1)
       const diffsArray = CURRENCY_LIST.map((c) => {
         const cur = CURRENCY[c]
         return BigInt(
@@ -78,7 +79,7 @@ export const useProve = () => {
         is_public: isPublic,
         aux: null,
       })
-
+      txState().setProof(proof)
       return proof
     },
   })

@@ -18,6 +18,7 @@ import { useInternalWallet } from "./use-internal-wallet"
 import { refreshPoolBalances } from "./use-pool-balances"
 import { useProve } from "./use-prove"
 import { refreshTokenBalances } from "./use-token-balances"
+import { txState } from "./use-tx-state"
 
 export const useDeposit = () => {
   const client = useSuiClient()
@@ -54,6 +55,12 @@ export const useDeposit = () => {
         .shiftedBy(cur.decimals)
         .integerValue(BigNumber.ROUND_FLOOR)
         .toString()
+
+      txState().startOperation({
+        type: "deposit",
+        amount,
+        coin: currency,
+      })
 
       const proof = await prove.mutateAsync({
         account: await getInternalAccount(currentAccount.address),
@@ -98,6 +105,8 @@ export const useDeposit = () => {
         transaction: tx,
       })
 
+      txState().setTxHash(txs.digest)
+
       const result = await client.waitForTransaction({
         digest: txs.digest,
         options: {
@@ -105,6 +114,9 @@ export const useDeposit = () => {
           showEvents: true,
         },
       })
+
+      txState().setTxResult(result)
+
       const leafInserted = result.events!.find(
         (t) => t.type === `${contracts.packageId}::core::LeafInserted`
       )?.parsedJson as any
@@ -136,6 +148,7 @@ export const useDeposit = () => {
       })
     },
     onError: (error) => {
+      txState().clear()
       toast.error("Deposit failed", {
         description: error.message,
       })

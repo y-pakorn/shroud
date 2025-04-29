@@ -37,12 +37,14 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NavBar } from "@/components/nav-bar"
 import { PoolBalanceCard } from "@/components/pool-balance-card"
+import { TxStateDialog } from "@/components/tx-state-dialog"
 import { WalletCard } from "@/components/wallet-card"
 
 export default function Home() {
   return (
     <main className="relative container space-y-4 py-8">
       <div className="fixed inset-0 z-[-1] h-screen w-screen scale-110 bg-[url('/bg.webp')] bg-cover bg-center opacity-35 blur-md" />
+      <TxStateDialog />
       <NavBar />
       <div className="relative">
         <div className="absolute top-0">

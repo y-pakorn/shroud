@@ -1,6 +1,6 @@
 import type { CURRENCY } from "@/config/currency"
 
-export type AccountHistory = (
+export type Action =
   | {
       type: "deposit"
       coin: keyof typeof CURRENCY
@@ -18,7 +18,8 @@ export type AccountHistory = (
       out: string
       in: string
     }
-) & {
+
+export type AccountHistory = Action & {
   timestamp: number
   digest: string
 }

@@ -18,6 +18,7 @@ import { useInternalWallet } from "./use-internal-wallet"
 import { refreshPoolBalances } from "./use-pool-balances"
 import { useProve } from "./use-prove"
 import { refreshTokenBalances } from "./use-token-balances"
+import { txState } from "./use-tx-state"
 
 export const useWithdraw = () => {
   const client = useSuiClient()
@@ -56,6 +57,12 @@ export const useWithdraw = () => {
         .integerValue(BigNumber.ROUND_FLOOR)
         .toString()
 
+      txState().startOperation({
+        type: "withdraw",
+        coin: currency,
+        amount,
+      })
+
       const proof = await prove.mutateAsync({
         account: await getInternalAccount(currentAccount.address),
         diffs: {
@@ -83,6 +90,8 @@ export const useWithdraw = () => {
         transaction: tx,
       })
 
+      txState().setTxHash(txs.digest)
+
       const result = await client.waitForTransaction({
         digest: txs.digest,
         options: {
@@ -90,6 +99,9 @@ export const useWithdraw = () => {
           showEvents: true,
         },
       })
+
+      txState().setTxResult(result)
+
       const leafInserted = result.events!.find(
         (t) => t.type === `${contracts.packageId}::core::LeafInserted`
       )?.parsedJson as any
@@ -121,6 +133,7 @@ export const useWithdraw = () => {
       })
     },
     onError: (error) => {
+      txState().clear()
       toast.error("Withdraw failed", {
         description: error.message,
       })

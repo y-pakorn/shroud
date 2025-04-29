@@ -35,7 +35,6 @@ export const usePoolBalances = ({
           showContent: true,
         },
       })
-      console.log(object)
       const balanceBagId = (object.data as any).content.fields.balances.fields
         .id.id
 
