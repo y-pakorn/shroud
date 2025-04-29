@@ -477,13 +477,12 @@ function SwapCard() {
     }
   }, [coinIn, coinOut])
 
-  const { valueOut, amount } = useMemo(() => {
+  const { amount, valueOut } = useMemo(() => {
     const amount = parseFloat(_amount?.replace(/,/g, ""))
 
     if (!amount) {
       form.clearErrors("amount")
       return {
-        valueOut: null,
         amount: null,
       }
     }
@@ -494,10 +493,9 @@ function SwapCard() {
       })
     }
 
-    const value = amount * (prices.data?.[coinOut] || 0)
     return {
-      valueOut: _.isNaN(value) ? null : value,
       amount: _.isNaN(amount) ? null : amount,
+      valueOut: _.isNaN(amount) ? null : amount * (prices.data?.[coinOut] || 0),
     }
   }, [_amount, coinOut, prices.data])
 
@@ -519,20 +517,23 @@ function SwapCard() {
         amountIn: null,
         minimumReceived: null,
         priceImpactPct: null,
+        valueOut: null,
       }
     }
 
     const amountIn = new BigNumber(quote.data.amount)
       .shiftedBy(-CURRENCY[coinOut].decimals)
       .toNumber()
+    const minimumReceived = amountIn * (1 - slippagePct / 100)
+    console.log(minimumReceived)
+    console.log(prices.data?.[coinOut])
+    const valueIn = minimumReceived * (prices.data?.[coinIn] || 0)
 
     return {
-      valueIn: _.isNaN(amountIn)
-        ? null
-        : amountIn * (prices.data?.[coinIn] || 0),
       amountIn: _.isNaN(amountIn) ? null : amountIn,
       priceImpactPct: quote.data.priceImact * 100,
-      minimumReceived: amountIn * (1 - slippagePct / 100),
+      minimumReceived,
+      valueIn,
     }
   }, [quote.data, slippagePct])
 
