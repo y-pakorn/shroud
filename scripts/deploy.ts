@@ -2,6 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { getFaucetHost, requestSuiFromFaucetV2 } from "@mysten/sui/faucet";
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import fs from "fs/promises";
@@ -21,6 +22,12 @@ const coins = [
 ];
 
 (async () => {
+  console.log("Getting faucet");
+  await requestSuiFromFaucetV2({
+    host: getFaucetHost("devnet"),
+    recipient: keypair.getPublicKey().toSuiAddress(),
+  });
+
   console.log(`Publishing and creating core on devnet`);
 
   const contractURI = path.resolve(__dirname, "../", "./contracts");
