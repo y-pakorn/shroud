@@ -12,13 +12,13 @@ public struct MerkleTree has key, store {
     hashes: vector<u256>,
     zeros: vector<u256>,
     leafs: Table<u64, u256>,
-    level: u64,
+    level: u8,
     root: u256,
     valid_size: u64,
     valid_roots: vector<u256>,
 }
 
-public fun new(level: u64, valid_size: u64, default_leaf: u256, ctx: &mut TxContext): MerkleTree {
+public fun new(level: u8, valid_size: u64, default_leaf: u256, ctx: &mut TxContext): MerkleTree {
     assert!(level > 1, EINVALID_LEVEL);
     assert!(valid_size > 0, EINVALID_VALID_SIZE);
 
@@ -52,7 +52,7 @@ public fun new(level: u64, valid_size: u64, default_leaf: u256, ctx: &mut TxCont
 
 public fun insert(tree: &mut MerkleTree, leaf: u256): (u64, u256) {
     let index = tree.leafs.length();
-    assert!(index < tree.level, EINVALID_INDEX);
+    assert!(index < 2u64.pow(tree.level), EINVALID_INDEX);
     tree.leafs.add(index, leaf);
 
     let mut cur_hash = leaf;
@@ -62,10 +62,10 @@ public fun insert(tree: &mut MerkleTree, leaf: u256): (u64, u256) {
     while (i < tree.level) {
         let (left, right) = if (cur_idx % 2 == 0) {
             tree.hashes.push_back(cur_hash);
-            tree.hashes.swap_remove(i);
-            (cur_hash, tree.zeros[i])
+            tree.hashes.swap_remove(i as u64);
+            (cur_hash, tree.zeros[i as u64])
         } else {
-            (tree.hashes[i], cur_hash)
+            (tree.hashes[i as u64], cur_hash)
         };
 
         let mut to_hash = vector::empty();

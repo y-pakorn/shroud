@@ -392,8 +392,8 @@ fun test_core() {
         initialize_prover(&mut admin, &mut shroud, vk_bytes);
         allow_token<shroud::usdc::USDC>(&mut admin, &mut shroud, scenario.ctx());
         allow_token<shroud::usdt::USDT>(&mut admin, &mut shroud, scenario.ctx());
-        allow_token<shroud::btc::BTC>(&mut admin, &mut shroud, scenario.ctx());
-        allow_token<shroud::eth::ETH>(&mut admin, &mut shroud, scenario.ctx());
+        allow_token<shroud::hasui::HASUI>(&mut admin, &mut shroud, scenario.ctx());
+        allow_token<shroud::suins::SUINS>(&mut admin, &mut shroud, scenario.ctx());
         allow_token<shroud::wal::WAL>(&mut admin, &mut shroud, scenario.ctx());
 
         let usdc_cap = coin::create_treasury_cap_for_testing<shroud::usdc::USDC>(scenario.ctx());
