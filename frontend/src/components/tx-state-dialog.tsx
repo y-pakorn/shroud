@@ -63,7 +63,7 @@ export function TxStateDialog() {
 
   return (
     <Dialog open={!!operation} onOpenChange={() => {}}>
-      <DialogContent hasCloseButton={false} className="bg-background/85 w-md">
+      <DialogContent hasCloseButton={false} className="bg-background/85 w-lg">
         <DialogHeader>
           <DialogTitle>{_.startCase(operation?.type)}</DialogTitle>
           <DialogDescription className="flex items-center gap-1">
@@ -74,7 +74,7 @@ export function TxStateDialog() {
                 },
                 (o) => (
                   <>
-                    Depositing {o.amount}{" "}
+                    Depositing {formatter.number(o.amount)}{" "}
                     <img
                       src={CURRENCY[o.coin].icon}
                       className="size-3 shrink-0 rounded-full"
@@ -88,7 +88,7 @@ export function TxStateDialog() {
                 },
                 (o) => (
                   <>
-                    Withdrawing {o.amount}{" "}
+                    Withdrawing {formatter.number(o.amount)}{" "}
                     <img
                       src={CURRENCY[o.coin].icon}
                       className="size-3 shrink-0 rounded-full"
@@ -102,12 +102,12 @@ export function TxStateDialog() {
                 },
                 (o) => (
                   <>
-                    Swapping {o.out}{" "}
+                    Swapping {formatter.number(o.out)}{" "}
                     <img
                       src={CURRENCY[o.from].icon}
                       className="size-3 shrink-0 rounded-full"
                     />{" "}
-                    for {o.in}{" "}
+                    for {formatter.number(o.in)}{" "}
                     <img
                       src={CURRENCY[o.to].icon}
                       className="size-3 shrink-0 rounded-full"
@@ -121,21 +121,23 @@ export function TxStateDialog() {
         <div className="text-muted-foreground text-sm">
           Do not close this window until the transaction is confirmed.
         </div>
-        <div>
+        <div className="space-y-1">
           {step >= 0 && (
             <div className="flex items-center gap-2">
-              <div className="font-light">Fetching merkle tree</div>
+              <div className="font-light">
+                Fetching global transaction history
+              </div>
               <Separator className="w-full flex-1 opacity-50" />
               {_.isNil(merkleTreeSize) ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                <div>{formatter.number(merkleTreeSize)} Elements</div>
+                <div>{formatter.number(merkleTreeSize)} Txs</div>
               )}
             </div>
           )}
           {step >= 1 && (
             <div className="flex items-center gap-2">
-              <div className="font-light">Fetching proving key</div>
+              <div className="font-light">Fetching ZK proving key</div>
               <Separator className="w-full flex-1 opacity-50" />
               {_.isNil(provingKeySize) ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -151,13 +153,17 @@ export function TxStateDialog() {
               {_.isNil(proof) ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                <div>{proof.proof.slice(0, 20)}</div>
+                <div className="text-end">
+                  <div>Nullifier {proof.nullifier.slice(0, 10)}</div>
+                  <div>New Note {proof.afterLeaf.slice(0, 10)}</div>
+                  <div>Proof {proof.proof.slice(0, 10)}</div>
+                </div>
               )}
             </div>
           )}
           {step >= 3 && (
             <div className="flex items-center gap-2">
-              <div className="font-light">Submitting Transaction</div>
+              <div className="font-light">Submitting transaction</div>
               <Separator className="w-full flex-1 opacity-50" />
               {_.isNil(txHash) ? (
                 <Loader2 className="size-4 animate-spin" />
