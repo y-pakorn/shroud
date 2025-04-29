@@ -62,7 +62,14 @@ export function TxStateDialog() {
   }, [merkleTreeSize, provingKeySize, proof, txHash])
 
   return (
-    <Dialog open={!!operation} onOpenChange={() => {}}>
+    <Dialog
+      open={!!operation}
+      onOpenChange={() => {
+        if (txResult) {
+          clear()
+        }
+      }}
+    >
       <DialogContent hasCloseButton={false} className="bg-background/85 w-lg">
         <DialogHeader>
           <DialogTitle>{_.startCase(operation?.type)}</DialogTitle>
