@@ -1,7 +1,7 @@
 module shroud::router;
 
-use shroud::btc::BTC;
-use shroud::eth::ETH;
+use shroud::hasui::HASUI;
+use shroud::suins::SUINS;
 use shroud::usdc::USDC;
 use shroud::usdt::USDT;
 use shroud::wal::WAL;
@@ -17,16 +17,16 @@ public struct Router has key, store {
 public fun create_router(
     usdc_cap: TreasuryCap<USDC>,
     usdt_cap: TreasuryCap<USDT>,
-    btc_cap: TreasuryCap<BTC>,
-    eth_cap: TreasuryCap<ETH>,
+    hasui_cap: TreasuryCap<HASUI>,
+    suins_cap: TreasuryCap<SUINS>,
     wal_cap: TreasuryCap<WAL>,
     ctx: &mut TxContext,
 ) {
     let mut bag = bag::new(ctx);
     bag.add(type_name::get<USDC>(), usdc_cap);
     bag.add(type_name::get<USDT>(), usdt_cap);
-    bag.add(type_name::get<BTC>(), btc_cap);
-    bag.add(type_name::get<ETH>(), eth_cap);
+    bag.add(type_name::get<HASUI>(), hasui_cap);
+    bag.add(type_name::get<SUINS>(), suins_cap);
     bag.add(type_name::get<WAL>(), wal_cap);
     let router = Router {
         id: object::new(ctx),

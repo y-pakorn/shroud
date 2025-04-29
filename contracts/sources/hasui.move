@@ -1,14 +1,14 @@
-module shroud::btc;
+module shroud::hasui;
 
 use sui::coin;
 
-public struct BTC has drop {}
+public struct HASUI has drop {}
 
-fun init(witness: BTC, ctx: &mut TxContext) {
+fun init(witness: HASUI, ctx: &mut TxContext) {
     let (treasury, metadata) = coin::create_currency(
         witness,
         6,
-        b"BTC",
+        b"haSUI",
         b"",
         b"",
         option::none(),

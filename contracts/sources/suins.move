@@ -1,14 +1,14 @@
-module shroud::eth;
+module shroud::suins;
 
 use sui::coin;
 
-public struct ETH has drop {}
+public struct SUINS has drop {}
 
-fun init(witness: ETH, ctx: &mut TxContext) {
+fun init(witness: SUINS, ctx: &mut TxContext) {
     let (treasury, metadata) = coin::create_currency(
         witness,
         6,
-        b"ETH",
+        b"SUINS",
         b"",
         b"",
         option::none(),

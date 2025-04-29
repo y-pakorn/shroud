@@ -16,8 +16,8 @@ const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const coins = [
   "{pkg}::usdc::USDC",
   "{pkg}::usdt::USDT",
-  "{pkg}::btc::BTC",
-  "{pkg}::eth::ETH",
+  "{pkg}::hasui::HASUI",
+  "{pkg}::suins::SUINS",
   "{pkg}::wal::WAL",
 ];
 
@@ -90,18 +90,18 @@ const coins = [
         o.objectType === `0x2::coin::TreasuryCap<${packageId}::usdt::USDT>`
     ) as any
   ).objectId;
-  const btcCap = (
+  const hasuiCap = (
     receipt.objectChanges?.find(
       (o) =>
         o.type === "created" &&
-        o.objectType === `0x2::coin::TreasuryCap<${packageId}::btc::BTC>`
+        o.objectType === `0x2::coin::TreasuryCap<${packageId}::hasui::HASUI>`
     ) as any
   ).objectId;
-  const ethCap = (
+  const suinsCap = (
     receipt.objectChanges?.find(
       (o) =>
         o.type === "created" &&
-        o.objectType === `0x2::coin::TreasuryCap<${packageId}::eth::ETH>`
+        o.objectType === `0x2::coin::TreasuryCap<${packageId}::suins::SUINS>`
     ) as any
   ).objectId;
   const walCap = (
@@ -143,8 +143,8 @@ const coins = [
     arguments: [
       txb.object(usdcCap),
       txb.object(usdtCap),
-      txb.object(btcCap),
-      txb.object(ethCap),
+      txb.object(hasuiCap),
+      txb.object(suinsCap),
       txb.object(walCap),
     ],
   });
