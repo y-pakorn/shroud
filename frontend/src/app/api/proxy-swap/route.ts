@@ -37,12 +37,12 @@ export async function POST(request: NextRequest) {
   const keypair = decodeSuiPrivateKey(env.PROXY_PRIVATE_KEY)
   const signer = Ed25519Keypair.fromSecretKey(keypair.secretKey)
 
-  // try {
-  //   await requestSuiFromFaucetV2({
-  //     host: getFaucetHost("devnet"),
-  //     recipient: signer.toSuiAddress(),
-  //   })
-  // } catch (e) {}
+  try {
+    await requestSuiFromFaucetV2({
+      host: getFaucetHost("devnet"),
+      recipient: signer.toSuiAddress(),
+    })
+  } catch (e) {}
   const client = new SuiClient({
     url: getFullnodeUrl("devnet"),
   })
