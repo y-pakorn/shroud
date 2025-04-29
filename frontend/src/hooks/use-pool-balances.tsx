@@ -6,7 +6,13 @@ import _ from "lodash"
 import { contracts } from "@/config/contract"
 import { CURRENCY } from "@/config/currency"
 
-export type PoolBalance = Record<keyof typeof CURRENCY, string>
+export type PoolBalance = Record<
+  keyof typeof CURRENCY,
+  {
+    amount: string
+    id: string
+  }
+>
 
 export const refreshPoolBalances = (client: QueryClient) => {
   client.invalidateQueries({
@@ -53,15 +59,21 @@ export const usePoolBalances = ({
         },
       })
       const balances = _.chain(rawBalances)
-        .map((d) => {
-          const balance = (d.data as any).content.fields.balance
-          const type = (d.data as any).content.type
+        .zip(poolBalanceIds.data!)
+        .map(([d, id]) => {
+          const balance = (d!.data as any).content.fields.balance
+          const type = (d!.data as any).content.type
           const currency = _.values(CURRENCY).find(
             (t) => type === `0x2::coin::Coin<${t.coinType}>`
           )!
           return [
             currency.id,
-            new BigNumber(balance).shiftedBy(-currency.decimals).toString(),
+            {
+              amount: new BigNumber(balance)
+                .shiftedBy(-currency.decimals)
+                .toString(),
+              id,
+            },
           ]
         })
         .fromPairs()

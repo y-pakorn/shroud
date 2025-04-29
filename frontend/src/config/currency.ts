@@ -33,27 +33,27 @@ export const CURRENCY = {
       "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
     faucetAmount: 1000,
   },
-  BTC: {
-    id: "BTC",
-    ticker: "BTC",
-    name: "Bitcoin",
-    icon: "https://s2.coinmarketcap.com/static/img/coins/200x200/1.png",
+  HASUI: {
+    id: "HASUI",
+    ticker: "haSUI",
+    name: "Haedal Staked SUI",
+    icon: "https://assets.haedal.xyz/logos/hasui.svg",
     decimals: 6,
-    coinType: `${contracts.packageId}::btc::BTC`,
+    coinType: `${contracts.packageId}::hasui::HASUI`,
     pythId:
-      "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
-    faucetAmount: 0.01,
+      "0x6120ffcf96395c70aa77e72dcb900bf9d40dccab228efca59a17b90ce423d5e8",
+    faucetAmount: 250,
   },
-  ETH: {
-    id: "ETH",
-    ticker: "ETH",
-    name: "Ethereum",
-    icon: "https://s2.coinmarketcap.com/static/img/coins/200x200/1027.png",
+  SUINS: {
+    id: "SUINS",
+    ticker: "SuiNS",
+    name: "SUI Name Service",
+    icon: "https://token-image.suins.io/icon.svg",
     decimals: 6,
-    coinType: `${contracts.packageId}::eth::ETH`,
+    coinType: `${contracts.packageId}::suins::SUINS`,
     pythId:
-      "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-    faucetAmount: 0.1,
+      "0xbb5ff26e47a3a6cc7ec2fce1db996c2a145300edc5acaabe43bf9ff7c5dd5d32",
+    faucetAmount: 10000,
   },
   WAL: {
     id: "WAL",
@@ -68,4 +68,4 @@ export const CURRENCY = {
   },
 }
 
-export const CURRENCY_LIST = ["USDC", "USDT", "BTC", "ETH", "WAL"] as const
+export const CURRENCY_LIST = ["USDC", "USDT", "HASUI", "SUINS", "WAL"] as const

@@ -525,8 +525,6 @@ function SwapCard() {
       .shiftedBy(-CURRENCY[coinOut].decimals)
       .toNumber()
     const minimumReceived = amountIn * (1 - slippagePct / 100)
-    console.log(minimumReceived)
-    console.log(prices.data?.[coinOut])
     const valueIn = minimumReceived * (prices.data?.[coinIn] || 0)
 
     return {
@@ -584,15 +582,15 @@ function SwapCard() {
                     <DropdownMenuItem
                       key={coin}
                       onClick={() => {
-                        if (coin === coinOut) {
+                        if (coin === coinIn) {
                           form.setValue(
                             "coinIn",
                             CURRENCY_LIST.find(
                               (c) => c !== coin && c !== coinOut
                             )!
                           )
-                          form.setValue("coinOut", coin)
                         }
+                        form.setValue("coinOut", coin)
                       }}
                       className="w-[200px]"
                     >

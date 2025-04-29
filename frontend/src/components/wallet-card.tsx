@@ -2,7 +2,7 @@ import { useState } from "react"
 import Link from "next/link"
 import dayjs from "dayjs"
 import _ from "lodash"
-import { ChevronDown, ExternalLink } from "lucide-react"
+import { ChevronDown, ExternalLink, FileUp } from "lucide-react"
 import { match, P } from "ts-pattern"
 
 import { CURRENCY, CURRENCY_LIST } from "@/config/currency"
@@ -30,7 +30,9 @@ export function WalletCard() {
 
   return (
     <Card className="bg-background/10 w-[250px] gap-0 py-2 text-sm">
-      <CardHeader className="px-4 font-medium">Wallet</CardHeader>
+      <CardHeader className="flex items-center justify-between px-4 font-medium">
+        <div>Wallet</div>
+      </CardHeader>
       <Separator className="mb-2" />
       <CardContent className="space-y-1 px-4">
         <Collapsible defaultOpen className="space-y-1">
@@ -64,8 +66,31 @@ export function WalletCard() {
           <>
             <Separator className="-mx-4" />
             <Collapsible defaultOpen className="space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <div>History</div>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="text-muted-foreground ml-auto"
+                  onClick={() => {
+                    // export history as .json file
+                    const history = account.history
+                    const file = new File(
+                      [JSON.stringify(history, null, 2)],
+                      "history.json",
+                      {
+                        type: "application/json",
+                      }
+                    )
+                    const url = URL.createObjectURL(file)
+                    const a = document.createElement("a")
+                    a.href = url
+                    a.download = "history.json"
+                    a.click()
+                  }}
+                >
+                  Export <FileUp />
+                </Button>
                 <CollapsibleTrigger>
                   <ChevronDown />
                 </CollapsibleTrigger>
