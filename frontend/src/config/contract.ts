@@ -1,19 +1,19 @@
 export const contracts = {
-  version: "1.3.0",
-  // Publish tx hash: 9QmZzbXRmicAm1GqoHjt9CDKL3Lsvzg6hKCEFqLDo5Ty
-  // Package ID: 0x82dc2d0d992aba5a05d70b7023d9ee119718b29368401408ba19330ff1b3b98d
-  // Shroud ID: 0x5f2840ac56566a6cc13b47f85e7eeef205ee760ff762d0b6689251797b90a225
-  // Admin Cap: 0x195182759d407ebddb95cda32b882902499a4c42f0ca344f5651130dad50cbf9
-  // Upgrade Cap: 0x021238ffc92a2a19bf1d5cd3854341d81adfb443f6bc460e2002fec6402f10d5
-  // Create shroud + prover & Allow token tx hash: GiaB2ueQoiKXtWJouikYFZAdevCCM6UHv8ttgB7M9PXT
-  // Router ID: 0x1bea8b7f51174fbbb1daf454b4fd18fafbaaa8390a3853a7db32530d1cacc38d
+  version: "1.4.0",
+  // Publish tx hash: 6Hsy7MikSmukbiS4LKGWrMcuMhiFKwx5pr981KFrB8xm
+  // Package ID: 0x3746d7c5ebef245bce573ce92a87bdc964a5285947af23a492058ac0c9cbe841
+  // Shroud ID: 0x9376fbe83dcad1d832fe66e68478f234f430c2bdef079dd5b363e20d71a1660d
+  // Admin Cap: 0x917a5a886aac55f66894308b7c68cbfc16532036cdb73defcb4c818e4c1a4de5
+  // Upgrade Cap: 0x030e1fd0fb63616d3275a58d8d3e8552ac03d9cbe6991dbaa0c973e3c9335d8c
+  // Create shroud + prover & Allow token tx hash: DkqNNN1srg1zEdrBvgiUBY99XHjinKvSK3HZDAnegYe9
+  // Router ID: 0x429fac2cff3dd36aac418afc7c623b5c82066aaddbb10a99294423cba9206e06
   packageId:
-    "0x82dc2d0d992aba5a05d70b7023d9ee119718b29368401408ba19330ff1b3b98d",
-  coreId: "0x5f2840ac56566a6cc13b47f85e7eeef205ee760ff762d0b6689251797b90a225",
+    "0x3746d7c5ebef245bce573ce92a87bdc964a5285947af23a492058ac0c9cbe841",
+  coreId: "0x9376fbe83dcad1d832fe66e68478f234f430c2bdef079dd5b363e20d71a1660d",
   adminCap:
-    "0x195182759d407ebddb95cda32b882902499a4c42f0ca344f5651130dad50cbf9",
+    "0x917a5a886aac55f66894308b7c68cbfc16532036cdb73defcb4c818e4c1a4de5",
   upgradeCap:
-    "0x021238ffc92a2a19bf1d5cd3854341d81adfb443f6bc460e2002fec6402f10d5",
+    "0x030e1fd0fb63616d3275a58d8d3e8552ac03d9cbe6991dbaa0c973e3c9335d8c",
   routerId:
-    "0x1bea8b7f51174fbbb1daf454b4fd18fafbaaa8390a3853a7db32530d1cacc38d",
+    "0x429fac2cff3dd36aac418afc7c623b5c82066aaddbb10a99294423cba9206e06",
 }
