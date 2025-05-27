@@ -31,7 +31,7 @@ export function WalletCard() {
   return (
     <Card className="bg-background/10 w-[250px] gap-0 py-2 text-sm">
       <CardHeader className="flex items-center justify-between px-4 font-medium">
-        <div>Wallet</div>
+        <div>Protocol Wallet</div>
       </CardHeader>
       <Separator className="mb-2" />
       <CardContent className="space-y-1 px-4">

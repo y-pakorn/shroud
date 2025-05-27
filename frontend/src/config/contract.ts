@@ -1,19 +1,19 @@
 export const contracts = {
-  version: "1.4.0",
-  // Publish tx hash: 6Hsy7MikSmukbiS4LKGWrMcuMhiFKwx5pr981KFrB8xm
-  // Package ID: 0x3746d7c5ebef245bce573ce92a87bdc964a5285947af23a492058ac0c9cbe841
-  // Shroud ID: 0x9376fbe83dcad1d832fe66e68478f234f430c2bdef079dd5b363e20d71a1660d
-  // Admin Cap: 0x917a5a886aac55f66894308b7c68cbfc16532036cdb73defcb4c818e4c1a4de5
-  // Upgrade Cap: 0x030e1fd0fb63616d3275a58d8d3e8552ac03d9cbe6991dbaa0c973e3c9335d8c
-  // Create shroud + prover & Allow token tx hash: DkqNNN1srg1zEdrBvgiUBY99XHjinKvSK3HZDAnegYe9
-  // Router ID: 0x429fac2cff3dd36aac418afc7c623b5c82066aaddbb10a99294423cba9206e06
+  version: "1.5.0",
+  // Publish tx hash: 9MbpSfyHD9SfXRNpuLGzi4PCqivHHqCuyMFtcHjpXuTf
+  // Package ID: 0x4549141c9df73d21277cd91f4a7c77cbb81fc23252fc9a03ee64eccbeaa77f73
+  // Shroud ID: 0xbf50ae7b87d7120cfbf3bc8027ba5c33899442bb3cb63ce18d3393ea38c92927
+  // Admin Cap: 0x051142854808d97af79df61520418c41fce7185cfef1f8d589353ed9a20e537d
+  // Upgrade Cap: 0x0aac9add7779b16e331529ba525489e64cc574d97824dac832f2a1dc1a3d4f3c
+  // Create shroud + prover & Allow token tx hash: 5YQvWUzDq4q5SbbzmaGumQdDe3D3ux3xn7e7XgNhqGt2
+  // Router ID: 0xafa5c04d1f6acc75260211931ca8d7e0ac3d5d2852ed4afcef0a17e9d82dc79e
   packageId:
-    "0x3746d7c5ebef245bce573ce92a87bdc964a5285947af23a492058ac0c9cbe841",
-  coreId: "0x9376fbe83dcad1d832fe66e68478f234f430c2bdef079dd5b363e20d71a1660d",
+    "0x4549141c9df73d21277cd91f4a7c77cbb81fc23252fc9a03ee64eccbeaa77f73",
+  coreId: "0xbf50ae7b87d7120cfbf3bc8027ba5c33899442bb3cb63ce18d3393ea38c92927",
   adminCap:
-    "0x917a5a886aac55f66894308b7c68cbfc16532036cdb73defcb4c818e4c1a4de5",
+    "0x051142854808d97af79df61520418c41fce7185cfef1f8d589353ed9a20e537d",
   upgradeCap:
-    "0x030e1fd0fb63616d3275a58d8d3e8552ac03d9cbe6991dbaa0c973e3c9335d8c",
+    "0x0aac9add7779b16e331529ba525489e64cc574d97824dac832f2a1dc1a3d4f3c",
   routerId:
-    "0x429fac2cff3dd36aac418afc7c623b5c82066aaddbb10a99294423cba9206e06",
+    "0xafa5c04d1f6acc75260211931ca8d7e0ac3d5d2852ed4afcef0a17e9d82dc79e",
 }
