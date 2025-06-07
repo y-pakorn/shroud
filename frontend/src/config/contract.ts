@@ -1,19 +1,19 @@
 export const contracts = {
   version: "1.5.0",
-  // Publish tx hash: 9MbpSfyHD9SfXRNpuLGzi4PCqivHHqCuyMFtcHjpXuTf
-  // Package ID: 0x4549141c9df73d21277cd91f4a7c77cbb81fc23252fc9a03ee64eccbeaa77f73
-  // Shroud ID: 0xbf50ae7b87d7120cfbf3bc8027ba5c33899442bb3cb63ce18d3393ea38c92927
-  // Admin Cap: 0x051142854808d97af79df61520418c41fce7185cfef1f8d589353ed9a20e537d
-  // Upgrade Cap: 0x0aac9add7779b16e331529ba525489e64cc574d97824dac832f2a1dc1a3d4f3c
-  // Create shroud + prover & Allow token tx hash: 5YQvWUzDq4q5SbbzmaGumQdDe3D3ux3xn7e7XgNhqGt2
-  // Router ID: 0xafa5c04d1f6acc75260211931ca8d7e0ac3d5d2852ed4afcef0a17e9d82dc79e
+  // Publish tx hash: Ad14rk88UtWEoybdakfd4PSounCQLgNrhNy9nr5poZFx
+  // Package ID: 0xbc663218330b4eb449b093d08f38087abb7bbbe0c416ad8d959afe695439885d
+  // Shroud ID: 0x8b9a6919fc06c1917ad94ff501ffdc231c8738a1f13f1698d0e10ef84dea14f6
+  // Admin Cap: 0xf4f09f133ca9c70867e3f41cb8552f103318bfb3cff18a95bf77c74cf5b72a60
+  // Upgrade Cap: 0xdbf96a39dc3e686bc2794c85d70acd74a9e9de0b5f30fdf4f05c3645d34f04df
+  // Create shroud + prover & Allow token tx hash: Hdnn9fi2ujm6dpLQgQEnTcyLdc2H9ApvBPGQuGcHZse3
+  // Router ID: 0xd2d3052f52a919c782beaea52f13db9c6b7896fbf7c2fbd81f7d5d26a56c854c
   packageId:
-    "0x4549141c9df73d21277cd91f4a7c77cbb81fc23252fc9a03ee64eccbeaa77f73",
-  coreId: "0xbf50ae7b87d7120cfbf3bc8027ba5c33899442bb3cb63ce18d3393ea38c92927",
+    "0xbc663218330b4eb449b093d08f38087abb7bbbe0c416ad8d959afe695439885d",
+  coreId: "0x8b9a6919fc06c1917ad94ff501ffdc231c8738a1f13f1698d0e10ef84dea14f6",
   adminCap:
-    "0x051142854808d97af79df61520418c41fce7185cfef1f8d589353ed9a20e537d",
+    "0xf4f09f133ca9c70867e3f41cb8552f103318bfb3cff18a95bf77c74cf5b72a60",
   upgradeCap:
-    "0x0aac9add7779b16e331529ba525489e64cc574d97824dac832f2a1dc1a3d4f3c",
+    "0xdbf96a39dc3e686bc2794c85d70acd74a9e9de0b5f30fdf4f05c3645d34f04df",
   routerId:
-    "0xafa5c04d1f6acc75260211931ca8d7e0ac3d5d2852ed4afcef0a17e9d82dc79e",
+    "0xd2d3052f52a919c782beaea52f13db9c6b7896fbf7c2fbd81f7d5d26a56c854c",
 }
