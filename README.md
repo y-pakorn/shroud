@@ -30,5 +30,5 @@ Privacy is achieved by encoding user addresses in UTXO notes, hiding them during
 
 The contract is deployed to devnet because _Sui's native Poseidon hash is not available in testnet nor mainnet_.
 
-- Package ID: `0xbc663218330b4eb449b093d08f38087abb7bbbe0c416ad8d959afe695439885d`
-- Shroud Core ID: `0x8b9a6919fc06c1917ad94ff501ffdc231c8738a1f13f1698d0e10ef84dea14f6`
+- Package ID: `0x1ff54c1d795cfcee79686c0c5e994babcb47fa7facd1ce664ffa11c7ff17791d`
+- Shroud Core ID: `0xeab4fea514cf302ba359351e7778ffac0188b2d0a3026afcf1fabade6fcc4faa`
