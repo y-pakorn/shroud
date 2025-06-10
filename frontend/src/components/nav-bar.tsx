@@ -12,7 +12,8 @@ export function NavBar() {
         height: NAVBAR_HEIGHT,
       }}
     >
-      <div className="-space-y-1">
+      <img src="/icon.webp" alt="Shroud" className="size-12" />
+      <div className="-ml-1 -space-y-1">
         <h1 className="text-2xl font-bold italic">SHROUD</h1>
         <p className="text-sm">Trade with privacy on Sui</p>
       </div>
