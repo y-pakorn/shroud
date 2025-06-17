@@ -1,19 +1,19 @@
 export const contracts = {
-  version: "1.5.0",
-  // Publish tx hash: 7pKQEZnKasmGQXYPYP6Sr9iLhucMaLU6RMhHKvV6Lvtn
-  // Package ID: 0x1ff54c1d795cfcee79686c0c5e994babcb47fa7facd1ce664ffa11c7ff17791d
-  // Shroud ID: 0xeab4fea514cf302ba359351e7778ffac0188b2d0a3026afcf1fabade6fcc4faa
-  // Admin Cap: 0x7c1873c9219c4ab6c25fef3585b9b061b692f3a31bd2a38084e4006865c90965
-  // Upgrade Cap: 0xaa555a4c865d260560627255552b855b67c32a35d13bee77e4b12fbf96973641
-  // Create shroud + prover & Allow token tx hash: GyFXPtuatS8hytrdYqKWMso7RPMmgPsWakhRFAcXrhFL
-  // Router ID: 0x9b57c18ddcb07cc7440c2941443ab6c4f444b1e7e4151062461224ecc07ad88f
+  version: "1.6.0",
+  //   Publish tx hash: FUtfpU6hp5sLeYhLDc6bqhYaKjdH3nzcKtexeYe7tg9W
+  // Package ID: 0x24275d2608ed248a575e42f55009fec191db4eb4afe3ad1cd20037bbd39c47b8
+  // Shroud ID: 0xa4aa8fbe0f3e6674d9e5a757ed9c0694ed0f213a9d4700b54a9ac9f7a53a139d
+  // Admin Cap: 0xfb681914eab6604a377320bbefac4b448b7dd5646002168e9ab785a1d2369f3c
+  // Upgrade Cap: 0xb70180c1604cda218b574f46bc55ebe4e2736a64b42368318cc2e56c77f49c90
+  // Create shroud + prover & Allow token tx hash: ETNnj7Q8xkyNwuni2MLLGd1jjESanErhZ3s6Np4SMyUW
+  // Router ID: 0xe204a1e22c24184c2f5ccb97c41c699bf7eca60d40e17dbdc4775b994b4a0426
   packageId:
-    "0x1ff54c1d795cfcee79686c0c5e994babcb47fa7facd1ce664ffa11c7ff17791d",
-  coreId: "0xeab4fea514cf302ba359351e7778ffac0188b2d0a3026afcf1fabade6fcc4faa",
+    "0x24275d2608ed248a575e42f55009fec191db4eb4afe3ad1cd20037bbd39c47b8",
+  coreId: "0xa4aa8fbe0f3e6674d9e5a757ed9c0694ed0f213a9d4700b54a9ac9f7a53a139d",
   adminCap:
-    "0x7c1873c9219c4ab6c25fef3585b9b061b692f3a31bd2a38084e4006865c90965",
+    "0xfb681914eab6604a377320bbefac4b448b7dd5646002168e9ab785a1d2369f3c",
   upgradeCap:
-    "0xaa555a4c865d260560627255552b855b67c32a35d13bee77e4b12fbf96973641",
+    "0xb70180c1604cda218b574f46bc55ebe4e2736a64b42368318cc2e56c77f49c90",
   routerId:
-    "0x9b57c18ddcb07cc7440c2941443ab6c4f444b1e7e4151062461224ecc07ad88f",
+    "0xe204a1e22c24184c2f5ccb97c41c699bf7eca60d40e17dbdc4775b994b4a0426",
 }
