@@ -1,19 +1,19 @@
 export const contracts = {
-  version: "1.6.0",
-  //   Publish tx hash: FUtfpU6hp5sLeYhLDc6bqhYaKjdH3nzcKtexeYe7tg9W
-  // Package ID: 0x24275d2608ed248a575e42f55009fec191db4eb4afe3ad1cd20037bbd39c47b8
-  // Shroud ID: 0xa4aa8fbe0f3e6674d9e5a757ed9c0694ed0f213a9d4700b54a9ac9f7a53a139d
-  // Admin Cap: 0xfb681914eab6604a377320bbefac4b448b7dd5646002168e9ab785a1d2369f3c
-  // Upgrade Cap: 0xb70180c1604cda218b574f46bc55ebe4e2736a64b42368318cc2e56c77f49c90
-  // Create shroud + prover & Allow token tx hash: ETNnj7Q8xkyNwuni2MLLGd1jjESanErhZ3s6Np4SMyUW
-  // Router ID: 0xe204a1e22c24184c2f5ccb97c41c699bf7eca60d40e17dbdc4775b994b4a0426
+  version: "1.7.0",
+  // Publish tx hash: 7WHoy3jDMqg7KEXnpfsXV13rYs1TjR2vNsNgsTRQZqiU
+  // Package ID: 0xba1993ce8670d2fd5f4ade6322f334a4834f3da09244d553f8c667344f7eb552
+  // Shroud ID: 0x06ffdbfb65b1cf69c84e63f72b8155f63bcade1d53b03cd4eddf332dd0adf8f1
+  // Admin Cap: 0x539fb621cef9d1e0f6fdff91628ef802aa3f267b8103bac4a9e1b5e628051fb5
+  // Upgrade Cap: 0x2ead9a40656b61dab486b4a4503af1c6aeb9af7fccb4589263e13e0177c0073b
+  // Create shroud + prover & Allow token tx hash: ASZRSPRE848YcoNSV2FDZDqH7CRhYSCX5KFHMvNYdPzV
+  // Router ID: 0x57d2272f15b4cea1182157a805216e0dcda32bf63b6cdb24b29d8bb00460b3e3
   packageId:
-    "0x24275d2608ed248a575e42f55009fec191db4eb4afe3ad1cd20037bbd39c47b8",
-  coreId: "0xa4aa8fbe0f3e6674d9e5a757ed9c0694ed0f213a9d4700b54a9ac9f7a53a139d",
+    "0xba1993ce8670d2fd5f4ade6322f334a4834f3da09244d553f8c667344f7eb552",
+  coreId: "0x06ffdbfb65b1cf69c84e63f72b8155f63bcade1d53b03cd4eddf332dd0adf8f1",
   adminCap:
-    "0xfb681914eab6604a377320bbefac4b448b7dd5646002168e9ab785a1d2369f3c",
+    "0x539fb621cef9d1e0f6fdff91628ef802aa3f267b8103bac4a9e1b5e628051fb5",
   upgradeCap:
-    "0xb70180c1604cda218b574f46bc55ebe4e2736a64b42368318cc2e56c77f49c90",
+    "0x2ead9a40656b61dab486b4a4503af1c6aeb9af7fccb4589263e13e0177c0073b",
   routerId:
-    "0xe204a1e22c24184c2f5ccb97c41c699bf7eca60d40e17dbdc4775b994b4a0426",
+    "0x57d2272f15b4cea1182157a805216e0dcda32bf63b6cdb24b29d8bb00460b3e3",
 }
